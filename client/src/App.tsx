@@ -1,0 +1,212 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { ThemeContext } from '@weave-design/theme-context';
+import darkBlueMediumDensityTheme from '@weave-design/theme-data/build/esm/darkBlueMediumDensityTheme';
+import { FileTree } from './components/FileTree';
+import { TopNav } from './components/TopNav';
+import { PromptWorkspace } from './components/PromptWorkspace';
+import { FileEntry, ProjectState } from './types/fs';
+import { isTauri, invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
+
+export const App: React.FC = () => {
+  const [project, setProject] = useState<ProjectState>({
+    rootPath: null,
+    projectName: '',
+    files: [],
+    selectedFile: null,
+    isLoading: false,
+  });
+
+  const [showSidebar, setShowSidebar] = useState<boolean>(true);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(260);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const dragStartXRef = useRef<number>(0);
+  const dragStartWidthRef = useRef<number>(260);
+
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartXRef.current = e.clientX;
+    dragStartWidthRef.current = sidebarWidth;
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const delta = e.clientX - dragStartXRef.current;
+      const minW = 160;
+      const maxW = Math.max(minW, window.innerWidth * 0.6);
+      const newWidth = Math.max(minW, Math.min(maxW, dragStartWidthRef.current + delta));
+      setSidebarWidth(Math.round(newWidth));
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging]);
+
+  const loadFolder = async (folderPath: string) => {
+    const folderName = folderPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || 'Project';
+    setProject((prev) => ({
+      ...prev,
+      rootPath: folderPath,
+      projectName: folderName,
+      isLoading: true,
+    }));
+
+    try {
+      if (isTauri()) {
+        const loadedFiles = await invoke<FileEntry[]>('read_project_directory', { path: folderPath });
+        setProject((prev) => ({
+          ...prev,
+          files: loadedFiles,
+          selectedFile: null,
+          isLoading: false,
+        }));
+      } else {
+        // Fallback for browser preview mode
+        setProject((prev) => ({
+          ...prev,
+          files: [
+            {
+              id: `${folderPath}/models`,
+              name: 'Models',
+              path: `${folderPath}/models`,
+              isDirectory: true,
+              children: [
+                { id: `${folderPath}/models/framing.edb`, name: 'framing.edb', path: `${folderPath}/models/framing.edb`, isDirectory: false },
+                { id: `${folderPath}/models/building.rvt`, name: 'building.rvt', path: `${folderPath}/models/building.rvt`, isDirectory: false },
+              ],
+            },
+            {
+              id: `${folderPath}/drawings`,
+              name: 'Drawings',
+              path: `${folderPath}/drawings`,
+              isDirectory: true,
+              children: [
+                { id: `${folderPath}/drawings/plan.dxf`, name: 'plan.dxf', path: `${folderPath}/drawings/plan.dxf`, isDirectory: false },
+              ],
+            },
+            {
+              id: `${folderPath}/calculations.pdf`,
+              name: 'calculations.pdf',
+              path: `${folderPath}/calculations.pdf`,
+              isDirectory: false,
+            },
+          ],
+          selectedFile: null,
+          isLoading: false,
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to load project directory:', err);
+      setProject((prev) => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const handleOpenFolderDialog = async () => {
+    try {
+      if (isTauri()) {
+        const selected = await open({
+          directory: true,
+          multiple: false,
+          title: 'Select Structural Project Folder',
+        });
+        if (selected && typeof selected === 'string') {
+          await loadFolder(selected);
+        }
+      } else {
+        const path = prompt('Enter local project folder path:');
+        if (path) {
+          await loadFolder(path);
+        }
+      }
+    } catch (err) {
+      console.error('Error opening folder dialog:', err);
+    }
+  };
+
+  const handleSelectFile = (file: FileEntry) => {
+    setProject((prev) => ({
+      ...prev,
+      selectedFile: file,
+    }));
+  };
+
+  return (
+    <ThemeContext.Provider value={darkBlueMediumDensityTheme}>
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#03070d] text-hud-text">
+        <TopNav
+          onOpenFolder={handleOpenFolderDialog}
+          onToggleSidebar={() => setShowSidebar((prev) => !prev)}
+        />
+
+        {/* Both panes with 1px border, rounded corners, and 3px space between with vertical ellipse grip */}
+        <div className="flex flex-1 overflow-hidden p-1.5 gap-[3px] bg-[#03070d]">
+          {showSidebar && (
+            <div
+              style={{ width: `${sidebarWidth}px` }}
+              className="h-full shrink-0 flex flex-col rounded-lg border border-[#0e2236] overflow-hidden bg-[#050d18]"
+            >
+              <FileTree
+                project={project}
+                onSelectFile={handleSelectFile}
+                onOpenFolderDialog={handleOpenFolderDialog}
+              />
+            </div>
+          )}
+
+          {/* 3px space resizer splitter with vertical ellipse grip */}
+          {showSidebar && (
+            <div
+              onMouseDown={startResizing}
+              className="w-[3px] h-full cursor-col-resize select-none relative flex items-center justify-center group shrink-0"
+              title="Drag to resize pane"
+            >
+              {/* Expanded hit area so dragging is easy to engage */}
+              <div className="absolute inset-y-0 -left-1.5 -right-1.5 z-30 cursor-col-resize" />
+
+              {/* Vertical ellipse grip */}
+              <svg
+                width="6"
+                height="28"
+                viewBox="0 0 6 28"
+                className={`z-40 transition-colors pointer-events-none ${
+                  isDragging
+                    ? 'text-[#00c8e6] drop-shadow-[0_0_6px_#00c8e6]'
+                    : 'text-[#2e4760] group-hover:text-[#00c8e6]'
+                }`}
+              >
+                <ellipse cx="3" cy="14" rx="2" ry="12" fill="currentColor" />
+              </svg>
+            </div>
+          )}
+
+          {/* Right Pane (Prompt Workspace / Conversation) */}
+          <div className="flex-1 h-full rounded-lg border border-[#0e2236] overflow-hidden bg-[#03070d] flex flex-col">
+            <PromptWorkspace project={project} />
+          </div>
+        </div>
+      </div>
+    </ThemeContext.Provider>
+  );
+};
+
+export default App;

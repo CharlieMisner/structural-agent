@@ -1,0 +1,26 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/agent/.venv/bin/python",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.indexing": true,
+  "python.analysis.packageIndexDepths": [
+    {
+      "name": "langchain_core",
+      "depth": 5,
+      "includeAllSymbols": true
+    },
+    {
+      "name": "langchain",
+      "depth": 5,
+      "includeAllSymbols": true
+    },
+    {
+      "name": "langgraph",
+      "depth": 5,
+      "includeAllSymbols": true
+    }
+  ],
+  "python.analysis.extraPaths": [
+    "./agent/src/agent"
+  ],
+  "antigravity.enableTelemetry": false
+}

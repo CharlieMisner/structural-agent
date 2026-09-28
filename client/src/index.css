@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  /* Central color variable: adjust this single value to brighten/dim all white text */
+  --text-bright: #ccd8e4;
+  --text-muted: #7e9bb4;
+}
+
+body {
+  background-color: #03070d;
+  color: var(--text-bright);
+}
+
+/* Prompt glow container */
+.prompt-glow-container {
+  position: relative;
+  width: 100%;
+}
+
+/* 1. Luminous atmospheric cyan base glow around the prompt bar */
+.prompt-base-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  box-shadow:
+    0 0 18px 1px rgba(0, 240, 255, 0.32),
+    0 0 42px 4px rgba(0, 240, 255, 0.15);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 0.6s ease-out;
+}
+
+/* 2. Distinct optical wave shimmer ripples flowing smoothly to the right */
+@keyframes waveSweep {
+  0% {
+    background-position: 0px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.prompt-shimmer-wave {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 13.5px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 240, 255, 0.04) 0%,
+    rgba(0, 240, 255, 0.20) 25%,
+    rgba(0, 240, 255, 0.65) 50%,
+    rgba(0, 240, 255, 0.20) 75%,
+    rgba(0, 240, 255, 0.04) 100%
+  );
+  background-size: 200px 100%;
+  animation: waveSweep 2.8s linear infinite;
+  filter: blur(3.5px);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 0.6s ease-out;
+}
+
+/* 3. Once focused: permanently extinguish both glows completely and disable wave */
+.prompt-glow-container.glow-extinguished .prompt-base-glow,
+.prompt-glow-container.glow-extinguished .prompt-shimmer-wave {
+  opacity: 0;
+  animation: none;
+}
+
+/* Minimal sleek scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #03070d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0d2238;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #143557;
+}
+
+.weave-tree-view-wrapper {
+  user-select: none;
+}

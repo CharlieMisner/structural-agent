@@ -1,0 +1,33 @@
+[project]
+name = "agent"
+version = "0.1.0"
+description = "Agent that drives structural engineering software to aid structural engineers."
+readme = "README.md"
+authors = [
+    { name = "charliemisner", email = "charliemisner@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "langchain>=1.4.2",
+    "langchain-core>=0.3.0",
+    "langchain-google-genai>=4.4.0",
+    "langgraph>=1.2.12",
+    "langgraph-cli[inmem]>=0.4.32",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-dotenv>=1.0.1",
+    "sse-starlette>=2.1.0",
+]
+
+[project.scripts]
+start-agent = "agent.server:start"
+agent = "agent.server:start"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.414",
+]
