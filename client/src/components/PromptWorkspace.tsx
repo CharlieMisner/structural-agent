@@ -1,11 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Loader2, ArrowUp } from 'lucide-react';
+import { FileText, Loader2, ArrowUp, Calculator } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { ProjectState } from '../types/fs';
+import { streamChat, AGENT_BASE_URL } from '../services/agentApi';
+
+export interface ToolCallRecord {
+  tool: string;
+  input?: Record<string, unknown>;
+  output?: unknown;
+}
 
 interface Message {
   id: string;
   sender: 'user' | 'agent';
   content: string;
+  toolCalls?: ToolCallRecord[];
 }
 
 interface PromptWorkspaceProps {
@@ -23,6 +35,7 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [toolStatus, setToolStatus] = useState<string | null>(null);
 
   // Once focused, the wave animation and glow are permanently disabled and will never wave again
   const [hasBeenFocused, setHasBeenFocused] = useState(false);
@@ -46,9 +59,9 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
     if (hasStarted) {
       scrollToBottom();
     }
-  }, [messages, isGenerating, hasStarted]);
+  }, [messages, isGenerating, toolStatus, hasStarted]);
 
-  const handleSendPrompt = (promptText: string) => {
+  const handleSendPrompt = async (promptText: string) => {
     const text = promptText.trim();
     if (!text || isGenerating) return;
 
@@ -58,37 +71,106 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
       content: text,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const agentMsgId = String(Date.now() + 1);
+    const initialAgentMsg: Message = {
+      id: agentMsgId,
+      sender: 'agent',
+      content: '',
+      toolCalls: [],
+    };
+
+    setMessages((prev) => [...prev, userMsg, initialAgentMsg]);
     setInput('');
     setIsGenerating(true);
+    setToolStatus(null);
 
-    setTimeout(() => {
-      let response = '';
-      const lower = text.toLowerCase();
-
-      if (lower.includes('steel beam') || lower.includes('beam')) {
-        response = `**AISC 360-16 Steel Beam Design**\n\n• **Span**: $L = 24.0\\text{ ft}$, Unbraced Length $L_b = 8.0\\text{ ft}$\n• **Loads**: $w_D = 1.1\\text{ k/ft}$, $w_L = 2.2\\text{ k/ft}$\n• **Selected Section**: **W18×40** (ASTM A992, $F_y = 50\\text{ ksi}$)\n  - Moment Demand $M_u = 279\\text{ k-ft} \\le \\phi M_n = 294\\text{ k-ft}$ (D/C = 0.95)\n  - Live Load Deflection $\\Delta_{LL} = L/420 \\le L/360$ (Pass)\n  - Shear Demand $V_u = 46.5\\text{ kips} \\le \\phi V_n = 169\\text{ kips}$ (Pass)`;
-      } else if (lower.includes('concrete column') || lower.includes('column')) {
-        response = `**ACI 318-19 Tied Concrete Column Design**\n\n• **Dimensions**: $20\\text{ in} \\times 20\\text{ in}$ Square Column\n• **Concrete Strength**: $f'_c = 5,000\\text{ psi}$, Reinforcement $f_y = 60\\text{ ksi}$\n• **Factored Demand**: $P_u = 950\\text{ kips}$, $M_u = 185\\text{ k-ft}$\n• **Reinforcement Ratio**: $\\rho_g = 2.0\\%$ (8 #9 longitudinal bars)\n• **Ties**: #4 ties @ $16\\text{ in}$ o.c. (meets seismic confinement requirements)`;
-      } else if (lower.includes('seismic')) {
-        response = `**ASCE 7-22 Equivalent Lateral Force (ELF) Seismic Calculation**\n\n• **Location Parameters**: $S_s = 1.35\\text{g}$, $S_1 = 0.52\\text{g}$, Site Class D\n• **Design Spectral Accelerations**: $S_{DS} = 0.99\\text{g}$, $S_{D1} = 0.62\\text{g}$\n• **Seismic Design Category**: **SDC D**\n• **Response Modification Factor**: $R = 8$ (Special Moment Frame)\n• **Seismic Response Coefficient**: $C_s = 0.0825$\n• **Total Effective Weight**: $W = 12,450\\text{ kips}$\n• **Calculated Base Shear**: $V = C_s W = 1,027\\text{ kips}$`;
-      } else if (lower.includes('wind')) {
-        response = `**ASCE 7-22 Directional Wind Load Analysis**\n\n• **Basic Wind Speed**: $V = 115\\text{ mph}$, Risk Category II\n• **Exposure Category**: C, Elevation $z_g = 900\\text{ ft}$\n• **Velocity Pressure at Roof**: $q_z = 32.4\\text{ psf}$\n• **Windward Pressure Coefficient**: $C_p = 0.8$\n• **Leeward Pressure Coefficient**: $C_p = -0.5$\n• **Total Design Wind Base Shear**: $V_w = 418\\text{ kips}$`;
-      } else if (project.selectedFile) {
-        response = `Inspecting **\`${project.selectedFile.name}\`**.\n\nParsed structural definitions and boundary conditions. Ready to run calculations or automate verification routines.`;
-      } else {
-        response = `Received prompt: "${text}". Querying structural standards and local project models to formulate the engineering calculation.`;
-      }
-
-      const agentMsg: Message = {
-        id: String(Date.now() + 1),
-        sender: 'agent',
-        content: response,
-      };
-
-      setMessages((prev) => [...prev, agentMsg]);
+    try {
+      await streamChat(
+        { prompt: text },
+        {
+          onToken: (token) => {
+            setToolStatus(null);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === agentMsgId ? { ...m, content: m.content + token } : m
+              )
+            );
+          },
+          onToolStart: (toolName, toolInput) => {
+            const friendlyName = toolName === 'max_moment_ss_beam'
+              ? 'Calculating simply supported beam max moment...'
+              : `Running ${toolName}...`;
+            setToolStatus(friendlyName);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === agentMsgId
+                  ? {
+                      ...m,
+                      toolCalls: [
+                        ...(m.toolCalls || []),
+                        { tool: toolName, input: toolInput },
+                      ],
+                    }
+                  : m
+              )
+            );
+          },
+          onToolEnd: (toolName, output) => {
+            setToolStatus('Formulating engineering explanation...');
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === agentMsgId
+                  ? {
+                      ...m,
+                      toolCalls: (m.toolCalls || []).map((tc) =>
+                        tc.tool === toolName && tc.output === undefined
+                          ? { ...tc, output }
+                          : tc
+                      ),
+                    }
+                  : m
+              )
+            );
+          },
+          onDone: () => {
+            setToolStatus(null);
+            setIsGenerating(false);
+          },
+          onError: (err) => {
+            setToolStatus(null);
+            setIsGenerating(false);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === agentMsgId
+                  ? {
+                      ...m,
+                      content:
+                        m.content ||
+                        `⚠️ Error from agent: ${err.message}`,
+                    }
+                  : m
+              )
+            );
+          },
+        }
+      );
+    } catch (err: unknown) {
+      setToolStatus(null);
       setIsGenerating(false);
-    }, 700);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === agentMsgId
+            ? {
+                ...m,
+                content:
+                  m.content ||
+                  `⚠️ Could not connect to Python sidecar on ${AGENT_BASE_URL}.\nMake sure the agent daemon is running (\`cd agent && uv run start-agent\`).\nError: ${errorMessage}`,
+              }
+            : m
+        )
+      );
+    }
   };
 
   const onSubmit = (e: React.FormEvent) => {
@@ -117,23 +199,93 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
                   <div className="whitespace-pre-wrap select-text font-sans">{msg.content}</div>
                 </div>
               </div>
-            ) : (
+            ) : (msg.content || (msg.toolCalls && msg.toolCalls.length > 0)) ? (
               <div
                 key={msg.id}
-                className="w-full transition-opacity duration-300 py-1"
+                className="w-full transition-opacity duration-300 py-1 space-y-3"
               >
-                <div className="text-sm leading-relaxed text-hud-text whitespace-pre-wrap select-text font-sans">
-                  {msg.content}
-                </div>
+                {/* Permanent Tool Execution Cards */}
+                {msg.toolCalls && msg.toolCalls.length > 0 && (
+                  <div className="space-y-2">
+                    {msg.toolCalls.map((tc, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg border border-[#0d2a45] bg-[#040e1b] overflow-hidden text-xs font-mono shadow-sm"
+                      >
+                        <div className="flex items-center justify-between px-3.5 py-2 bg-[#06162a] border-b border-[#0d2a45]">
+                          <div className="flex items-center space-x-2 text-[#00c8e6]">
+                            <Calculator className="w-3.5 h-3.5 text-[#00c8e6]" />
+                            <span className="font-semibold text-hud-text">
+                              {tc.tool === 'max_moment_ss_beam'
+                                ? 'Simply Supported Beam Moment Calculator'
+                                : tc.tool}
+                            </span>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-wider text-[#436480] font-sans">
+                            Deterministic Calculation
+                          </span>
+                        </div>
+                        <div className="p-3 space-y-1.5 text-[#8ba2b9]">
+                          {tc.input && Object.keys(tc.input).length > 0 && (
+                            <div className="flex items-baseline space-x-2">
+                              <span className="text-[#436480] min-w-[55px]">Inputs:</span>
+                              <span className="text-hud-text">
+                                {Object.entries(tc.input)
+                                  .map(([k, v]) => `${k} = ${v}`)
+                                  .join(', ')}
+                              </span>
+                            </div>
+                          )}
+                          {tc.output !== undefined && (
+                            <div className="flex items-baseline space-x-2">
+                              <span className="text-[#436480] min-w-[55px]">Result:</span>
+                              <span className="text-[#00e5a3] font-semibold">
+                                {typeof tc.output === 'object'
+                                  ? JSON.stringify(tc.output)
+                                  : `${tc.output} kip·ft`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Markdown + LaTeX Body */}
+                {msg.content && (
+                  <div className="text-sm leading-relaxed text-hud-text select-text font-sans">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+                      components={{
+                        p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
+                        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                        strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                        code: ({ children }) => (
+                          <code className="bg-[#05111e] border border-[#0d2847] px-1.5 py-0.5 rounded text-[#00c8e6] font-mono text-xs">
+                            {children}
+                          </code>
+                        ),
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
-            )
+            ) : null
           )}
 
-          {/* Thinking State */}
+          {/* Thinking / Calculation State */}
           {isGenerating && (
             <div className="flex items-center space-x-2 py-2 text-xs text-hud-text">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-[#00c8e6]" />
-              <span className="font-mono text-[11px] text-[#44596d]">Processing calculations...</span>
+              <span className="font-mono text-[11px] text-[#44596d]">
+                {toolStatus || 'Thinking...'}
+              </span>
             </div>
           )}
 
@@ -200,7 +352,7 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
                 value={input}
                 onFocus={() => setHasBeenFocused(true)}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={placeholder}
+                placeholder={hasStarted ? 'Prompt Statikor' : placeholder}
                 className="w-full bg-transparent pl-4 pr-12 py-3.5 text-sm text-hud-text placeholder-[#47647d] focus:outline-none font-mono"
               />
               <button

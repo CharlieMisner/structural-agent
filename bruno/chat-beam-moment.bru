@@ -1,0 +1,17 @@
+meta {
+  name: Chat - Beam Max Moment
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "prompt": "Calculate the maximum bending moment for a simply supported beam with a span of 20 ft and a uniform load of 4 klf."
+  }
+}

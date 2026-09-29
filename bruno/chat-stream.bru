@@ -1,0 +1,17 @@
+meta {
+  name: Chat Stream (SSE)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/chat/stream
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "prompt": "What is the maximum bending moment for a 20ft simply supported beam carrying 4 klf?"
+  }
+}

@@ -13,6 +13,7 @@
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",
+    "@types/katex": "^0.16.8",
     "@weave-design/button": "1.2.0",
     "@weave-design/icons": "1.1.0",
     "@weave-design/theme-context": "1.0.0",
@@ -20,9 +21,13 @@
     "@weave-design/tree-view": "1.0.3",
     "@weave-design/typography": "1.0.0",
     "clsx": "^2.1.1",
+    "katex": "^0.18.9",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {

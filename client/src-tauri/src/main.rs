@@ -72,6 +72,21 @@ fn read_project_directory(path: String) -> Result<Vec<FileEntry>, String> {
 // ---------------------------------------------------------------------------
 pub struct SidecarState(pub Mutex<Option<Child>>);
 
+fn normalize_path(path: &Path) -> PathBuf {
+    use std::path::Component;
+    let mut out = PathBuf::new();
+    for comp in path.components() {
+        match comp {
+            Component::ParentDir => {
+                out.pop();
+            }
+            Component::CurDir => {}
+            _ => out.push(comp),
+        }
+    }
+    out
+}
+
 fn find_agent_paths() -> Option<(PathBuf, PathBuf)> {
     // Check environment override first
     if let Ok(py_override) = std::env::var("AGENT_PYTHON_PATH") {
@@ -82,21 +97,33 @@ fn find_agent_paths() -> Option<(PathBuf, PathBuf)> {
                 .and_then(|p| p.parent())
                 .map(|p| p.to_path_buf())
                 .unwrap_or_else(|| PathBuf::from("."));
-            return Some((py_path, dir_path));
+            return Some((normalize_path(&py_path), normalize_path(&dir_path)));
         }
     }
 
-    // Relative candidates depending on where tauri dev or binary was launched from
-    let candidates = [
-        ("agent/.venv/bin/python", "agent"),
-        ("../agent/.venv/bin/python", "../agent"),
-        ("../../agent/.venv/bin/python", "../../agent"),
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+
+    #[cfg(windows)]
+    let python_subpath = "Scripts/python.exe";
+    #[cfg(not(windows))]
+    let python_subpath = "bin/python";
+
+    let candidate_dirs = [
+        "server",
+        "../server",
+        "../../server",
+        "agent",
+        "../agent",
+        "../../agent",
     ];
 
-    for (py_rel, dir_rel) in candidates {
-        let py_path = PathBuf::from(py_rel);
-        if py_path.exists() {
-            let dir_path = PathBuf::from(dir_rel);
+    for dir_rel in candidate_dirs {
+        let raw_dir = cwd.join(dir_rel);
+        let raw_py = raw_dir.join(".venv").join(python_subpath);
+
+        if raw_py.exists() && raw_dir.exists() {
+            let dir_path = normalize_path(&raw_dir);
+            let py_path = normalize_path(&raw_py);
             return Some((py_path, dir_path));
         }
     }
@@ -104,20 +131,26 @@ fn find_agent_paths() -> Option<(PathBuf, PathBuf)> {
 }
 
 fn start_sidecar() -> Result<Child, String> {
-    if let Some((python_bin, agent_dir)) = find_agent_paths() {
+    if let Some((python_bin, srv_dir)) = find_agent_paths() {
+        let module_name = if srv_dir.join("src").join("server").exists() {
+            "server.server"
+        } else {
+            "agent.server"
+        };
         eprintln!(
-            "[Statikor Sidecar] Launching Python daemon: {:?} in {:?}",
-            python_bin, agent_dir
+            "[Statikor Sidecar] Launching Python daemon: {:?} (module: {}) in {:?}",
+            python_bin, module_name, srv_dir
         );
-        Command::new(python_bin)
-            .args(["-m", "agent.server"])
-            .current_dir(agent_dir)
+        Command::new(&python_bin)
+            .args(["-m", module_name])
+            .current_dir(&srv_dir)
+            .env("PYTHONPATH", srv_dir.join("src"))
             .spawn()
             .map_err(|e| format!("Failed to spawn Python sidecar: {}", e))
     } else {
-        eprintln!("[Statikor Sidecar] Agent venv not found. Attempting 'python3 -m agent.server'...");
+        eprintln!("[Statikor Sidecar] Sidecar venv not found. Attempting fallback 'python3 -m server.server'...");
         Command::new("python3")
-            .args(["-m", "agent.server"])
+            .args(["-m", "server.server"])
             .spawn()
             .map_err(|e| format!("Failed to spawn fallback python3: {}", e))
     }

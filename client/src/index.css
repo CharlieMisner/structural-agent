@@ -94,3 +94,21 @@ body {
 .weave-tree-view-wrapper {
   user-select: none;
 }
+
+/* KaTeX math adjustments for Statikor dark theme */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  margin: 0.75rem 0 !important;
+}
+
+.katex {
+  font-size: 1.05em;
+  color: #d8e5f2;
+}
+
+.katex .mord.mathbf {
+  color: #00e5a3;
+}
+

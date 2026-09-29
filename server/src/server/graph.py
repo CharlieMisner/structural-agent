@@ -7,7 +7,7 @@ from langchain.chat_models import init_chat_model
 from langchain.messages import AIMessage, AnyMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 
-from agent.tools import tools, tools_by_name
+from agent.config.tools_config import tools, tools_by_name
 
 from pathlib import Path
 
@@ -21,13 +21,19 @@ LLM_CALL = "llm_call"
 TOOL_NODE = "tool_node"
 
 system_message = SystemMessage(
-    content="You are a licensed professional engineer specializing in Structural Engineering."
+    content=(
+        "You are Statikor, an intelligent assistant designed to meet structural engineers where they already work. "
+        "Your core purpose is to drive, automate, and orchestrate existing professional structural engineering "
+        "software (including Autodesk Revit, ETABS, SAP2000, Enercalc, Forte, spColumn, RISA, RAM Steel, and Excel). "
+        "Always prioritize utilizing integrated engineering software and tools for calculations, analyses, "
+        "and code verification."
+    )
 )
 
 api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "placeholder-key"
 
 model = init_chat_model(
-    "gemini-2.5-flash",
+    "gemini-3.8-flash",
     model_provider="google_genai",
     api_key=api_key,
     temperature=0
