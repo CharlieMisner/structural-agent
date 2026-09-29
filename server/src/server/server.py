@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 import uvicorn
 
-from agent.graph import MessageState, graph
+from server.graph import MessageState, graph
 
 # Load environment variables (.env.local or .env)
 env_local = Path(__file__).resolve().parents[2] / ".env.local"
@@ -26,7 +26,7 @@ if env_local.exists():
 else:
     load_dotenv()
 
-from agent.config.tools_config import tools_by_name
+from server.config.tools_config import tools_by_name
 
 # ---------------------------------------------------------------------------
 # FastAPI App & CORS Configuration
@@ -345,7 +345,7 @@ async def chat_stream(request: ChatRequest):
 def start():
     """Start the FastAPI sidecar server on 127.0.0.1:41420."""
     uvicorn.run(
-        "agent.server:app",
+        "server.server:app",
         host="127.0.0.1",
         port=41420,
         reload=True,

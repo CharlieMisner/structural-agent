@@ -1,2 +1,2 @@
 def main() -> None:
-    print("Hello from agent!")
+    print("Hello from server!")

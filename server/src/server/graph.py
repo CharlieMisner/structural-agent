@@ -7,7 +7,7 @@ from langchain.chat_models import init_chat_model
 from langchain.messages import AIMessage, AnyMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 
-from agent.config.tools_config import tools, tools_by_name
+from server.config.tools_config import tools, tools_by_name
 
 from pathlib import Path
 

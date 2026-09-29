@@ -1,5 +1,5 @@
 [project]
-name = "agent"
+name = "server"
 version = "0.1.0"
 description = "Agent that drives structural engineering software to aid structural engineers."
 readme = "README.md"
@@ -20,8 +20,10 @@ dependencies = [
 ]
 
 [project.scripts]
-start-agent = "agent.server:start"
-agent = "agent.server:start"
+start-server = "server.server:start"
+server = "server.server:start"
+start-agent = "server.server:start"
+agent = "server.server:start"
 
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]

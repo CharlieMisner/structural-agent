@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, KeyRound, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { X, Lock, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { ToolConfig } from '../types/fs';
 
@@ -197,7 +197,7 @@ export const ForteLoginDialog: React.FC<ForteLoginDialogProps> = ({
           {/* Forte User Name */}
           <div className="space-y-1">
             <label className="text-[11px] font-mono font-medium text-hud-text">
-              Forte User Name
+              Forte User Name (email)
             </label>
             <input
               type="text"
@@ -233,12 +233,6 @@ export const ForteLoginDialog: React.FC<ForteLoginDialogProps> = ({
                 {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             </div>
-          </div>
-
-          {/* Keychain Note */}
-          <div className="flex items-center space-x-1.5 text-[10px] text-[#4a6177] font-mono">
-            <KeyRound className="w-3 h-3 text-[#00c8e6]/70 shrink-0" />
-            <span>Credentials are authenticated via OAuth and stored in your OS Keychain.</span>
           </div>
 
           {/* Action Buttons */}

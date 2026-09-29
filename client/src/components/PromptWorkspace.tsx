@@ -165,7 +165,7 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
                 ...m,
                 content:
                   m.content ||
-                  `⚠️ Could not connect to Python sidecar on ${AGENT_BASE_URL}.\nMake sure the agent daemon is running (\`cd agent && uv run start-agent\`).\nError: ${errorMessage}`,
+                  `⚠️ Could not connect to Python sidecar on ${AGENT_BASE_URL}.\nMake sure the agent daemon is running (\`cd server && uv run start-server\`).\nError: ${errorMessage}`,
               }
             : m
         )
