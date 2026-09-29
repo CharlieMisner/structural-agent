@@ -6,8 +6,18 @@ export interface FileEntry {
   children?: FileEntry[];
 }
 
+export interface ToolConfig {
+  id: string;
+  name: string;
+  authenticated: boolean;
+  username?: string;
+  tokenExpiresAt?: number;
+  addedAt?: number;
+}
+
 export interface ProjectConfig {
   id: string;
+  tools?: ToolConfig[];
 }
 
 export interface ProjectState {
@@ -15,6 +25,7 @@ export interface ProjectState {
   projectId?: string | null;
   projectName: string;
   files: FileEntry[];
+  tools?: ToolConfig[];
   selectedFile: FileEntry | null;
   isLoading: boolean;
 }

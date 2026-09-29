@@ -18,10 +18,43 @@ pub struct FileEntry {
     pub children: Option<Vec<FileEntry>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolConfig {
+    pub id: String,
+    pub name: String,
+    pub authenticated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_expires_at: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub added_at: Option<i64>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectConfig {
     pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<ToolConfig>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct ForteTokenResponse {
+    pub access_token: String,
+    #[serde(rename = "accessToken")]
+    pub access_token_alias: String,
+    #[serde(default)]
+    pub token_type: Option<String>,
+    #[serde(default, rename = "tokenType")]
+    pub token_type_alias: Option<String>,
+    #[serde(default)]
+    pub expires_in: Option<i64>,
+    #[serde(default, rename = "expiresIn")]
+    pub expires_in_alias: Option<i64>,
+    #[serde(default)]
+    pub username: Option<String>,
 }
 
 fn generate_uuid_v4() -> String {
@@ -75,7 +108,10 @@ fn ensure_statikor_project(root_dir: &Path) -> Result<ProjectConfig, String> {
         .map_err(|e| format!("Failed to create .statikor folder: {}", e))?;
 
     let new_id = generate_uuid_v4();
-    let config = ProjectConfig { id: new_id };
+    let config = ProjectConfig {
+        id: new_id,
+        tools: Some(Vec::new()),
+    };
 
     let json_content = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("Failed to serialize project config: {}", e))?;
@@ -213,6 +249,216 @@ fn delete_path(path: String) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[tauri::command]
+fn save_project_tool(project_path: String, tool: ToolConfig) -> Result<ProjectConfig, String> {
+    let p = Path::new(&project_path);
+    let mut config = ensure_statikor_project(p)?;
+    let mut tools = config.tools.unwrap_or_default();
+
+    if let Some(existing) = tools.iter_mut().find(|t| t.id == tool.id) {
+        *existing = tool;
+    } else {
+        tools.push(tool);
+    }
+
+    config.tools = Some(tools);
+
+    let statikor_dir = p.join(".statikor");
+    let project_file = statikor_dir.join("project.json");
+    let json_content = serde_json::to_string_pretty(&config)
+        .map_err(|e| format!("Failed to serialize project config: {}", e))?;
+    fs::write(&project_file, json_content)
+        .map_err(|e| format!("Failed to write project.json: {}", e))?;
+
+    Ok(config)
+}
+
+fn get_fallback_credentials_file() -> Result<PathBuf, String> {
+    let home = std::env::var("HOME").or_else(|_| std::env::var("USERPROFILE"))
+        .map_err(|_| "Could not find home directory".to_string())?;
+    let statikor_home = PathBuf::from(home).join(".statikor");
+    if !statikor_home.exists() {
+        let _ = fs::create_dir_all(&statikor_home);
+    }
+    Ok(statikor_home.join("credentials.json"))
+}
+
+#[tauri::command]
+fn store_keychain_secret(service: String, account: String, secret: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let output = Command::new("security")
+            .args(["add-generic-password", "-s", &service, "-a", &account, "-w", &secret, "-U"])
+            .output();
+        if let Ok(out) = output {
+            if out.status.success() {
+                return Ok(());
+            }
+        }
+    }
+
+    // Fallback storage in ~/.statikor/credentials.json
+    if let Ok(file_path) = get_fallback_credentials_file() {
+        let mut map: serde_json::Map<String, serde_json::Value> = if file_path.exists() {
+            fs::read_to_string(&file_path)
+                .ok()
+                .and_then(|c| serde_json::from_str(&c).ok())
+                .unwrap_or_default()
+        } else {
+            serde_json::Map::new()
+        };
+        let key = format!("{}:{}", service, account);
+        map.insert(key, serde_json::Value::String(secret));
+        if let Ok(json_str) = serde_json::to_string_pretty(&map) {
+            let _ = fs::write(&file_path, json_str);
+        }
+        return Ok(());
+    }
+
+    Err("Failed to store credentials".to_string())
+}
+
+#[tauri::command]
+fn get_keychain_secret(service: String, account: String) -> Result<String, String> {
+    #[cfg(target_os = "macos")]
+    {
+        let output = Command::new("security")
+            .args(["find-generic-password", "-s", &service, "-a", &account, "-w"])
+            .output();
+        if let Ok(out) = output {
+            if out.status.success() {
+                let token = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if !token.is_empty() {
+                    return Ok(token);
+                }
+            }
+        }
+    }
+
+    // Fallback retrieval from ~/.statikor/credentials.json
+    if let Ok(file_path) = get_fallback_credentials_file() {
+        if file_path.exists() {
+            if let Ok(content) = fs::read_to_string(&file_path) {
+                if let Ok(map) = serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&content) {
+                    let key = format!("{}:{}", service, account);
+                    if let Some(val) = map.get(&key).and_then(|v| v.as_str()) {
+                        return Ok(val.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    Err("Secret not found in Keychain or local credentials store".to_string())
+}
+
+#[tauri::command]
+fn delete_keychain_secret(service: String, account: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = Command::new("security")
+            .args(["delete-generic-password", "-s", &service, "-a", &account])
+            .output();
+    }
+    if let Ok(file_path) = get_fallback_credentials_file() {
+        if file_path.exists() {
+            if let Ok(content) = fs::read_to_string(&file_path) {
+                if let Ok(mut map) = serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&content) {
+                    let key = format!("{}:{}", service, account);
+                    map.remove(&key);
+                    if let Ok(json_str) = serde_json::to_string_pretty(&map) {
+                        let _ = fs::write(&file_path, json_str);
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn url_encode_component(s: &str, keep_at: bool) -> String {
+    let mut out = String::with_capacity(s.len() * 2);
+    for b in s.bytes() {
+        match b {
+            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char);
+            }
+            b'@' if keep_at => {
+                out.push('@');
+            }
+            _ => {
+                out.push_str(&format!("%{:02X}", b));
+            }
+        }
+    }
+    out
+}
+
+#[tauri::command]
+fn authenticate_forteweb(username: String, password: String) -> Result<ForteTokenResponse, String> {
+    let enc_user = url_encode_component(&username, true);
+    let enc_pass = url_encode_component(&password, false);
+    let body = format!("grant_type=password&username={}&password={}", enc_user, enc_pass);
+    eprintln!("[Statikor Forte Auth] Authenticating for user: {}", enc_user);
+
+    let output = Command::new("curl")
+        .args([
+            "-s",
+            "--url", "https://fortewebapi-production.azurewebsites.net/token",
+            "-H", "accept: application/json, text/plain, */*",
+            "-H", "accept-language: en-US",
+            "-H", "cache-control: no-cache",
+            "-H", "content-type: text/plain",
+            "-H", "origin: https://forteweb.com",
+            "-H", "pragma: no-cache",
+            "-H", "priority: u=1, i",
+            "-H", "referer: https://forteweb.com/",
+            "-H", "sec-ch-ua: \"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+            "-H", "sec-ch-ua-mobile: ?0",
+            "-H", "sec-ch-ua-platform: \"macOS\"",
+            "-H", "sec-fetch-dest: empty",
+            "-H", "sec-fetch-mode: cors",
+            "-H", "sec-fetch-site: cross-site",
+            "-H", "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+            "--data-raw", &body,
+        ])
+        .output()
+        .map_err(|e| format!("Failed to execute curl: {}", e))?;
+
+    let response_str = String::from_utf8_lossy(&output.stdout).to_string();
+    eprintln!("[Statikor Forte Auth] Response: {}", response_str);
+
+    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&response_str) {
+        if let Some(token) = val.get("access_token").and_then(|t| t.as_str()) {
+            let expires_in = val.get("expires_in").and_then(|e| e.as_i64()).unwrap_or(86400);
+            let token_type = val.get("token_type").and_then(|t| t.as_str()).map(|s| s.to_string());
+            let user_name = val.get("userName").or_else(|| val.get("username")).and_then(|u| u.as_str()).map(|s| s.to_string()).unwrap_or_else(|| username.clone());
+            return Ok(ForteTokenResponse {
+                access_token: token.to_string(),
+                access_token_alias: token.to_string(),
+                token_type: token_type.clone(),
+                token_type_alias: token_type,
+                expires_in: Some(expires_in),
+                expires_in_alias: Some(expires_in),
+                username: Some(user_name),
+            });
+        }
+        if let Some(err_desc) = val.get("error_description").and_then(|e| e.as_str()) {
+            return Err(err_desc.to_string());
+        }
+        if let Some(err) = val.get("error").and_then(|e| e.as_str()) {
+            return Err(err.to_string());
+        }
+    }
+
+    if response_str.contains("not allowed by policy") || response_str.trim().is_empty() {
+        return Err(format!("Forte server rejected request: {}", response_str));
+    }
+
+    Err(format!("Authentication failed: {}", response_str))
+}
+
 
 // ---------------------------------------------------------------------------
 // Python Agent Sidecar Management
@@ -384,7 +630,12 @@ fn main() {
             get_sidecar_status,
             create_file,
             create_directory,
-            delete_path
+            delete_path,
+            save_project_tool,
+            store_keychain_secret,
+            get_keychain_secret,
+            delete_keychain_secret,
+            authenticate_forteweb
         ])
         .build(tauri::generate_context!())
         .expect("error while building structural agent client application");

@@ -8,7 +8,7 @@ import {
   FileSpreadsheet16,
   FilePdf16,
 } from '@weave-design/icons';
-import { FileEntry, ProjectState } from '../types/fs';
+import { FileEntry, ProjectState, ToolConfig } from '../types/fs';
 import {
   FolderSearch,
   FolderPlus,
@@ -19,8 +19,11 @@ import {
   Wrench,
   RotateCw,
   Trash2,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { AddToolDialog } from './AddToolDialog';
+import { ForteLoginDialog } from './ForteLoginDialog';
 
 interface FileTreeProps {
   project: ProjectState;
@@ -30,6 +33,7 @@ interface FileTreeProps {
   onCreateFolder?: (targetDir: string, name: string) => Promise<boolean>;
   onDeletePath?: (targetPath: string) => Promise<boolean>;
   onRefresh?: () => Promise<void>;
+  onSaveTool?: (tool: ToolConfig) => Promise<void>;
 }
 
 export const FileTree: React.FC<FileTreeProps> = ({
@@ -40,10 +44,12 @@ export const FileTree: React.FC<FileTreeProps> = ({
   onCreateFolder,
   onDeletePath,
   onRefresh,
+  onSaveTool,
 }) => {
   const [isFolderOpen, setIsFolderOpen] = useState<boolean>(true);
   const [isToolsOpen, setIsToolsOpen] = useState<boolean>(true);
   const [isAddToolOpen, setIsAddToolOpen] = useState<boolean>(false);
+  const [isForteLoginOpen, setIsForteLoginOpen] = useState<boolean>(false);
 
   // File & Folder inline creation state
   const [creationMode, setCreationMode] = useState<'file' | 'folder' | null>(null);
@@ -200,6 +206,22 @@ export const FileTree: React.FC<FileTreeProps> = ({
       y: Math.min(e.clientY, window.innerHeight - 180),
       targetItem: item || null,
     });
+  };
+
+  const handleSelectTool = async (toolId: string) => {
+    setIsAddToolOpen(false);
+    if (toolId === 'forteweb') {
+      const existing = project.tools?.find((t) => t.id === 'forteweb');
+      if (!existing && onSaveTool) {
+        await onSaveTool({
+          id: 'forteweb',
+          name: 'ForteWEB',
+          authenticated: false,
+          addedAt: Date.now(),
+        });
+      }
+      setIsForteLoginOpen(true);
+    }
   };
 
   const getFileIcon = (file: FileEntry, isExpanded?: boolean) => {
@@ -606,7 +628,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
           {/* Panel 2 Body */}
           {isToolsOpen && (
-            <div className="flex-1 p-3 flex flex-col space-y-2.5 overflow-y-auto">
+            <div className="flex-1 p-2.5 flex flex-col space-y-2 overflow-y-auto">
               <button
                 type="button"
                 onClick={() => setIsAddToolOpen(true)}
@@ -616,15 +638,77 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 <span>Add Tool</span>
               </button>
 
-              <div className="py-2 px-2 rounded border border-dashed border-[#0e2236] bg-[#030914]/50 text-center">
-                <div className="flex items-center justify-center space-x-1.5 text-[#44596d] mb-1">
-                  <Wrench className="w-3 h-3 text-[#44596d]" />
-                  <span className="text-[11px] font-mono">Engineering Tools</span>
+              {/* Active Tools List */}
+              {project.tools && project.tools.length > 0 ? (
+                <div className="flex flex-col space-y-1.5">
+                  {project.tools.map((tool) => {
+                    const isAuthed =
+                      tool.authenticated &&
+                      (!tool.tokenExpiresAt || tool.tokenExpiresAt > Date.now());
+
+                    return (
+                      <div
+                        key={tool.id}
+                        onClick={() => {
+                          if (tool.id === 'forteweb') {
+                            setIsForteLoginOpen(true);
+                          }
+                        }}
+                        className={`p-2 rounded-lg border transition-all cursor-pointer group flex items-center justify-between ${
+                          isAuthed
+                            ? 'bg-[#061726]/80 border-[#0d344d] hover:border-[#00c8e6]/60'
+                            : 'bg-[#061220]/60 border-[#0e2236] hover:border-amber-500/50'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2 truncate">
+                          <div className="w-6 h-6 rounded bg-[#07192c] border border-[#0e2b45] flex items-center justify-center shrink-0">
+                            <Wrench className="w-3 h-3 text-[#00c8e6]" />
+                          </div>
+                          <div className="flex flex-col truncate">
+                            <span className="text-[11px] font-mono font-semibold text-hud-text group-hover:text-[#00c8e6] transition-colors truncate">
+                              {tool.name}
+                            </span>
+                            <span className="text-[9.5px] font-mono text-[#546b82] truncate">
+                              {isAuthed
+                                ? tool.username || 'Authenticated'
+                                : 'Sign in required'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Lock status indicator: Green closed lock vs Gray open lock */}
+                        <div className="flex items-center space-x-1 shrink-0 ml-2">
+                          {isAuthed ? (
+                            <span
+                              title={`Authenticated (${tool.username || 'ForteWEB'})`}
+                              className="p-1 rounded bg-[#00e5a3]/10 text-[#00e5a3]"
+                            >
+                              <Lock className="w-3.5 h-3.5 text-[#00e5a3]" />
+                            </span>
+                          ) : (
+                            <span
+                              title="Unauthenticated — click to sign in"
+                              className="p-1 rounded bg-[#546b82]/10 text-[#546b82] group-hover:text-amber-400 group-hover:bg-amber-400/10 transition-colors"
+                            >
+                              <Unlock className="w-3.5 h-3.5 text-[#546b82]" />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="text-[10px] text-[#3b4e61] font-mono leading-tight">
-                  Connect structural software to automate member design and analysis.
-                </p>
-              </div>
+              ) : (
+                <div className="py-2.5 px-2 rounded border border-dashed border-[#0e2236] bg-[#030914]/50 text-center">
+                  <div className="flex items-center justify-center space-x-1.5 text-[#44596d] mb-1">
+                    <Wrench className="w-3 h-3 text-[#44596d]" />
+                    <span className="text-[11px] font-mono">Engineering Tools</span>
+                  </div>
+                  <p className="text-[10px] text-[#3b4e61] font-mono leading-tight">
+                    Connect structural software to automate member design and analysis.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -703,6 +787,20 @@ export const FileTree: React.FC<FileTreeProps> = ({
       <AddToolDialog
         isOpen={isAddToolOpen}
         onClose={() => setIsAddToolOpen(false)}
+        onSelectTool={handleSelectTool}
+      />
+
+      {/* Forte Login Modal Dialog */}
+      <ForteLoginDialog
+        isOpen={isForteLoginOpen}
+        onClose={() => setIsForteLoginOpen(false)}
+        projectPath={project.rootPath}
+        initialUsername={project.tools?.find((t) => t.id === 'forteweb')?.username || ''}
+        onSuccess={async (toolConfig) => {
+          if (onSaveTool) {
+            await onSaveTool(toolConfig);
+          }
+        }}
       />
     </>
   );

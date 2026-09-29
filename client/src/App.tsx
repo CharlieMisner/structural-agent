@@ -89,6 +89,7 @@ export const App: React.FC = () => {
           ...prev,
           files: loadedFiles,
           projectId: projectConfig?.id || null,
+          tools: projectConfig?.tools || [],
           selectedFile: null,
           isLoading: false,
         }));
@@ -98,6 +99,7 @@ export const App: React.FC = () => {
         setProject((prev) => ({
           ...prev,
           projectId: mockProjectId,
+          tools: [],
           files: [
             {
               id: `${folderPath}/models`,
@@ -252,6 +254,47 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSaveTool = async (tool: import('./types/fs').ToolConfig) => {
+    if (project.rootPath) {
+      if (isTauri()) {
+        const updatedConfig = await invoke<ProjectConfig>('save_project_tool', {
+          projectPath: project.rootPath,
+          tool,
+        });
+        setProject((prev) => ({
+          ...prev,
+          tools: updatedConfig.tools || [],
+        }));
+      } else {
+        const res = await fetch('http://127.0.0.1:41420/api/project/tool/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectPath: project.rootPath, tool }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setProject((prev) => ({
+            ...prev,
+            tools: data.config?.tools || [],
+          }));
+        }
+      }
+    } else {
+      // Fallback if no folder open yet
+      setProject((prev) => {
+        const currentTools = prev.tools || [];
+        const existingIdx = currentTools.findIndex((t) => t.id === tool.id);
+        const nextTools = [...currentTools];
+        if (existingIdx >= 0) {
+          nextTools[existingIdx] = tool;
+        } else {
+          nextTools.push(tool);
+        }
+        return { ...prev, tools: nextTools };
+      });
+    }
+  };
+
   return (
     <ThemeContext.Provider value={darkBlueMediumDensityTheme}>
       <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#03070d] text-hud-text">
@@ -275,6 +318,7 @@ export const App: React.FC = () => {
                 onCreateFolder={handleCreateFolder}
                 onDeletePath={handleDeletePath}
                 onRefresh={handleRefresh}
+                onSaveTool={handleSaveTool}
               />
             </div>
           )}

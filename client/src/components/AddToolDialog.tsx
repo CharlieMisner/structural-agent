@@ -4,6 +4,7 @@ import { X, Wrench } from 'lucide-react';
 interface AddToolDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelectTool: (toolId: string) => void;
 }
 
 interface ToolExample {
@@ -80,7 +81,11 @@ const TOOL_EXAMPLES: ToolExample[] = [
   },
 ];
 
-export const AddToolDialog: React.FC<AddToolDialogProps> = ({ isOpen, onClose }) => {
+export const AddToolDialog: React.FC<AddToolDialogProps> = ({
+  isOpen,
+  onClose,
+  onSelectTool,
+}) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -123,7 +128,7 @@ export const AddToolDialog: React.FC<AddToolDialogProps> = ({ isOpen, onClose })
         <div className="p-5 overflow-y-auto flex-1">
           <div className="mb-4">
             <p className="text-xs text-[#728aa0] font-mono leading-relaxed">
-              Select a structural engineering software or calculation tool to integrate.
+              Select a structural engineering software or calculation tool to integrate into this project.
             </p>
           </div>
 
@@ -136,7 +141,7 @@ export const AddToolDialog: React.FC<AddToolDialogProps> = ({ isOpen, onClose })
                     key={tool.id}
                     type="button"
                     onClick={() => {
-                      // For now clicking the button does nothing
+                      onSelectTool(tool.id);
                     }}
                     className="flex flex-col text-left p-3.5 rounded-lg bg-[#071728] hover:bg-[#0a233d] border border-[#00c8e6]/50 hover:border-[#00c8e6] shadow-[0_0_12px_rgba(0,200,230,0.12)] hover:shadow-[0_0_18px_rgba(0,200,230,0.25)] transition-all group relative cursor-pointer"
                   >

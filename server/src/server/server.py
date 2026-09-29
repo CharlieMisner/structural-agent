@@ -161,6 +161,118 @@ async def api_delete_path(request: FsCreateRequest):
     else:
         p.unlink()
     return {"status": "ok", "path": str(p)}
+
+class ToolConfigModel(BaseModel):
+    id: str
+    name: str
+    authenticated: bool = False
+    username: str | None = None
+    tokenExpiresAt: int | None = None
+    addedAt: int | None = None
+
+class SaveProjectToolRequest(BaseModel):
+    projectPath: str
+    tool: ToolConfigModel
+
+class ForteAuthRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/project/tool/save")
+async def save_project_tool_api(request: SaveProjectToolRequest):
+    proj_dir = Path(request.projectPath)
+    statikor_dir = proj_dir / ".statikor"
+    statikor_dir.mkdir(parents=True, exist_ok=True)
+    project_file = statikor_dir / "project.json"
+
+    data = {"id": str(proj_dir.name), "tools": []}
+    if project_file.exists():
+        try:
+            with open(project_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            pass
+
+    tools = data.get("tools", [])
+    if not isinstance(tools, list):
+        tools = []
+
+    tool_dict = request.tool.model_dump(exclude_none=True)
+    updated = False
+    for i, t in enumerate(tools):
+        if isinstance(t, dict) and t.get("id") == request.tool.id:
+            tools[i] = tool_dict
+            updated = True
+            break
+    if not updated:
+        tools.append(tool_dict)
+
+    data["tools"] = tools
+    with open(project_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+
+    return {"status": "ok", "config": data}
+
+@app.post("/api/tools/forte/auth")
+async def forte_auth_api(request: ForteAuthRequest):
+    import subprocess
+    from urllib.parse import quote
+    enc_user = quote(request.username, safe="@.-_~")
+    enc_pass = quote(request.password, safe="")
+    body = f"grant_type=password&username={enc_user}&password={enc_pass}"
+    cmd = [
+        "curl", "-s",
+        "--url", "https://fortewebapi-production.azurewebsites.net/token",
+        "-H", "accept: application/json, text/plain, */*",
+        "-H", "accept-language: en-US",
+        "-H", "cache-control: no-cache",
+        "-H", "content-type: text/plain",
+        "-H", "origin: https://forteweb.com",
+        "-H", "pragma: no-cache",
+        "-H", "priority: u=1, i",
+        "-H", "referer: https://forteweb.com/",
+        "-H", 'sec-ch-ua: "Google Chrome";v="153", "Not_A Brand";v="8", "Chromium";v="153"',
+        "-H", "sec-ch-ua-mobile: ?0",
+        "-H", 'sec-ch-ua-platform: "macOS"',
+        "-H", "sec-fetch-dest: empty",
+        "-H", "sec-fetch-mode: cors",
+        "-H", "sec-fetch-site: cross-site",
+        "-H", "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+        "--data-raw", body,
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        out = proc.stdout
+        try:
+            data = json.loads(out)
+            if "access_token" in data:
+                tok = data["access_token"]
+                exp = data.get("expires_in", 86400)
+                tt = data.get("token_type", "bearer")
+                un = data.get("userName") or data.get("username") or request.username
+                return {
+                    "access_token": tok,
+                    "accessToken": tok,
+                    "expires_in": exp,
+                    "expiresIn": exp,
+                    "token_type": tt,
+                    "tokenType": tt,
+                    "username": un,
+                    "userName": un,
+                }
+            if "error_description" in data:
+                raise HTTPException(status_code=401, detail=data["error_description"])
+            if "error" in data:
+                raise HTTPException(status_code=401, detail=data["error"])
+        except json.JSONDecodeError:
+            pass
+        raise HTTPException(status_code=400, detail=f"Authentication rejected: {out}")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+
     
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
