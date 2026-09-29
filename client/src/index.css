@@ -91,10 +91,6 @@ body {
   background: #143557;
 }
 
-.weave-tree-view-wrapper {
-  user-select: none;
-}
-
 /* KaTeX math adjustments for Statikor dark theme */
 .katex-display {
   overflow-x: auto;

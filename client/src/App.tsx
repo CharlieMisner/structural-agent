@@ -4,13 +4,14 @@ import darkBlueMediumDensityTheme from '@weave-design/theme-data/build/esm/darkB
 import { FileTree } from './components/FileTree';
 import { TopNav } from './components/TopNav';
 import { PromptWorkspace } from './components/PromptWorkspace';
-import { FileEntry, ProjectState } from './types/fs';
+import { FileEntry, ProjectConfig, ProjectState } from './types/fs';
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 
 export const App: React.FC = () => {
   const [project, setProject] = useState<ProjectState>({
     rootPath: null,
+    projectId: null,
     projectName: '',
     files: [],
     selectedFile: null,
@@ -72,18 +73,31 @@ export const App: React.FC = () => {
     }));
 
     try {
+      // Ensure Python backend initializes .statikor/project.json as well
+      fetch('http://127.0.0.1:41420/api/project/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: folderPath }),
+      }).catch(() => null);
+
       if (isTauri()) {
-        const loadedFiles = await invoke<FileEntry[]>('read_project_directory', { path: folderPath });
+        const [loadedFiles, projectConfig] = await Promise.all([
+          invoke<FileEntry[]>('read_project_directory', { path: folderPath }),
+          invoke<ProjectConfig>('get_project_config', { path: folderPath }).catch(() => null),
+        ]);
         setProject((prev) => ({
           ...prev,
           files: loadedFiles,
+          projectId: projectConfig?.id || null,
           selectedFile: null,
           isLoading: false,
         }));
       } else {
         // Fallback for browser preview mode
+        const mockProjectId = crypto.randomUUID();
         setProject((prev) => ({
           ...prev,
+          projectId: mockProjectId,
           files: [
             {
               id: `${folderPath}/models`,
@@ -150,6 +164,94 @@ export const App: React.FC = () => {
     }));
   };
 
+  const handleCreateFile = async (targetDir: string, fileName: string): Promise<boolean> => {
+    const cleanDir = targetDir.replace(/\/+$/, '');
+    const cleanName = fileName.replace(/^\/+/, '');
+    const filePath = `${cleanDir}/${cleanName}`;
+    try {
+      if (isTauri()) {
+        await invoke('create_file', { path: filePath });
+      } else {
+        const res = await fetch('http://127.0.0.1:41420/api/fs/create-file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: filePath }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ detail: 'Failed to create file' }));
+          throw new Error(errData.detail || 'Failed to create file');
+        }
+      }
+      if (project.rootPath) {
+        await loadFolder(project.rootPath);
+      }
+      return true;
+    } catch (err) {
+      console.error('Failed to create file:', err);
+      alert(`Could not create file: ${err instanceof Error ? err.message : String(err)}`);
+      return false;
+    }
+  };
+
+  const handleCreateFolder = async (targetDir: string, folderName: string): Promise<boolean> => {
+    const cleanDir = targetDir.replace(/\/+$/, '');
+    const cleanName = folderName.replace(/^\/+/, '');
+    const dirPath = `${cleanDir}/${cleanName}`;
+    try {
+      if (isTauri()) {
+        await invoke('create_directory', { path: dirPath });
+      } else {
+        const res = await fetch('http://127.0.0.1:41420/api/fs/create-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: dirPath }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ detail: 'Failed to create folder' }));
+          throw new Error(errData.detail || 'Failed to create folder');
+        }
+      }
+      if (project.rootPath) {
+        await loadFolder(project.rootPath);
+      }
+      return true;
+    } catch (err) {
+      console.error('Failed to create folder:', err);
+      alert(`Could not create folder: ${err instanceof Error ? err.message : String(err)}`);
+      return false;
+    }
+  };
+
+  const handleDeletePath = async (targetPath: string): Promise<boolean> => {
+    try {
+      if (isTauri()) {
+        await invoke('delete_path', { path: targetPath });
+      } else {
+        const res = await fetch('http://127.0.0.1:41420/api/fs/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: targetPath }),
+        });
+        if (!res.ok) {
+          throw new Error('Failed to delete path');
+        }
+      }
+      if (project.rootPath) {
+        await loadFolder(project.rootPath);
+      }
+      return true;
+    } catch (err) {
+      console.error('Failed to delete:', err);
+      return false;
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (project.rootPath) {
+      await loadFolder(project.rootPath);
+    }
+  };
+
   return (
     <ThemeContext.Provider value={darkBlueMediumDensityTheme}>
       <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#03070d] text-hud-text">
@@ -169,6 +271,10 @@ export const App: React.FC = () => {
                 project={project}
                 onSelectFile={handleSelectFile}
                 onOpenFolderDialog={handleOpenFolderDialog}
+                onCreateFile={handleCreateFile}
+                onCreateFolder={handleCreateFolder}
+                onDeletePath={handleDeletePath}
+                onRefresh={handleRefresh}
               />
             </div>
           )}

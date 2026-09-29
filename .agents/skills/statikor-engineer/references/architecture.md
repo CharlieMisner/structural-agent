@@ -93,3 +93,4 @@ Tauri acts as the parent supervisor for the Python agent:
   - `onToken(token)`
   - `onDone()`
   - `onError(error)`
+

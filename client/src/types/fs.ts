@@ -6,8 +6,13 @@ export interface FileEntry {
   children?: FileEntry[];
 }
 
+export interface ProjectConfig {
+  id: string;
+}
+
 export interface ProjectState {
   rootPath: string | null;
+  projectId?: string | null;
   projectName: string;
   files: FileEntry[];
   selectedFile: FileEntry | null;

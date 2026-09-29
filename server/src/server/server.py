@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.messages import HumanMessage
 from pydantic import BaseModel, Field
@@ -86,6 +86,13 @@ def extract_text(content: Any) -> str:
     return ""
 
 
+class ProjectInitRequest(BaseModel):
+    path: str = Field(..., description="Absolute path to the structural project directory")
+
+class ProjectInitResponse(BaseModel):
+    id: str = Field(..., description="Project UUID")
+    created: bool = Field(..., description="True if a new .statikor/project.json was created")
+
 @app.get("/health")
 async def health_check():
     """Health & readiness probe used by Tauri to confirm the sidecar is live."""
@@ -97,6 +104,63 @@ async def health_check():
         "api_key_configured": api_key_set,
         "available_tools": list(tools_by_name.keys()),
     }
+
+@app.post("/api/project/init", response_model=ProjectInitResponse)
+async def init_project(request: ProjectInitRequest):
+    """Ensure .statikor/project.json exists in the opened project folder with a UUID."""
+    proj_dir = Path(request.path)
+    statikor_dir = proj_dir / ".statikor"
+    project_file = statikor_dir / "project.json"
+
+    if project_file.exists():
+        try:
+            with open(project_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and "id" in data and isinstance(data["id"], str) and data["id"].strip():
+                    return ProjectInitResponse(id=data["id"].strip(), created=False)
+        except Exception:
+            pass
+
+    statikor_dir.mkdir(parents=True, exist_ok=True)
+    import uuid
+    project_id = str(uuid.uuid4())
+    config = {"id": project_id}
+    with open(project_file, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+    return ProjectInitResponse(id=project_id, created=True)
+
+class FsCreateRequest(BaseModel):
+    path: str = Field(..., description="Absolute path of the file or folder to create")
+
+@app.post("/api/fs/create-file")
+async def api_create_file(request: FsCreateRequest):
+    p = Path(request.path)
+    if p.exists():
+        raise HTTPException(status_code=400, detail="File or directory already exists")
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.touch()
+    return {"status": "ok", "path": str(p), "name": p.name}
+
+@app.post("/api/fs/create-folder")
+async def api_create_folder(request: FsCreateRequest):
+    p = Path(request.path)
+    if p.exists():
+        raise HTTPException(status_code=400, detail="File or directory already exists")
+    p.mkdir(parents=True, exist_ok=True)
+    return {"status": "ok", "path": str(p), "name": p.name}
+
+@app.post("/api/fs/delete")
+async def api_delete_path(request: FsCreateRequest):
+    p = Path(request.path)
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="Path does not exist")
+    if p.is_dir():
+        import shutil
+        shutil.rmtree(p)
+    else:
+        p.unlink()
+    return {"status": "ok", "path": str(p)}
     
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
