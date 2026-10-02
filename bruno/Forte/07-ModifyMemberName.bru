@@ -1,0 +1,1035 @@
+meta {
+  name: ModifyMemberName
+  type: http
+  seq: 7
+}
+
+post {
+  url: https://fortewebapi-production.azurewebsites.net/api/MemberProperties/ModifyMemberName
+  body: json
+  auth: bearer
+}
+
+headers {
+  accept: application/json, text/plain, */*
+  accept-language: en-US
+  cache-control: no-cache
+  content-type: application/json
+  origin: https://forteweb.com
+  pragma: no-cache
+  priority: u=1, i
+  referer: https://forteweb.com/
+  sec-ch-ua: "Google Chrome";v="153", "Not_A Brand";v="8", "Chromium";v="153"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-platform: "macOS"
+  sec-fetch-dest: empty
+  sec-fetch-mode: cors
+  sec-fetch-site: cross-site
+  sec-fetch-storage-access: active
+  user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36
+}
+
+auth:bearer {
+  token: {{forteToken}}
+}
+
+body:json {
+  {
+    "memberId": "1",
+    "containerId": "0",
+    "newName": "Floor: Joist3",
+    "postResponseData": {
+      "IsPostResponseDataObject": 1,
+      "FileHash": "7ptUsA0b89TV3hQggUxtMgFhaflKAGUAZgBmACcAcwAgAGcAYQBsAGwAYgBsAGEAZABkAGUAcgA6ACAAYQAgAGgAYQB1AG4AdABpAG4AZwA=",
+      "ApplicationData": {
+        "SelectedMemberIDTag": 1,
+        "DataVersion": "4.1.0",
+        "BuildNumber": 104,
+        "ProgramSettingsData": {
+          "OperatorName": "Charlie D Misner",
+          "OperatorCompany": "Napior",
+          "OperatorPhone": "(425) 445-0569",
+          "OperatorEmail": "charliemisner@gmail.com",
+          "UOM": 1,
+          "MaterialListRounding": 1,
+          "IsComparisonWoodVolume": true,
+          "CurrentCulture": "en-US",
+          "RoofDeadLoadApplication": 1
+        },
+        "JobSettingsData": {
+          "BuildingCode": 20,
+          "BuildingCodeForteWEB": 30,
+          "ProvinceSelected": "nbccnone",
+          "ProvincialCode": "nbcc2020",
+          "ConnectorMfg": 2,
+          "PostalCode": "98102",
+          "JobNotes": "",
+          "SoftwareOperator": "",
+          "LDFDead": 0.9,
+          "LDFFloor": 1,
+          "LDFWind": 1.6,
+          "LDFSnow": 1.15,
+          "LDFSeismic": 1.6,
+          "LDFRoof": 1.25,
+          "VibrationModification": true
+        },
+        "JobWindLoadingData": {
+          "DoNotApplyWindLoad": false,
+          "OccupancyCategory": 1,
+          "BasicWindSpeed": "115 mph",
+          "IsHurricaneProneRegion": false,
+          "LoadApplicationOption": 0,
+          "NbccSelectedRegion": 654730,
+          "NbccSelectedLocation": 655436,
+          "WindPressure": 0.36,
+          "NbccOriginalRegionDefault": 0
+        },
+        "JobSeismicLoadingData": {
+          "OverStrengthOmega": 2.5,
+          "OverStrengthSDS": 1,
+          "DesignCategory": 4
+        },
+        "MemberManagerData": {
+          "SelectedContainerID": 0,
+          "SelectedMemberID": 1,
+          "IsFitnesse": false,
+          "MemberTagCollection": {
+            "0": {
+              "Key": 0,
+              "Value": 0
+            },
+            "1": {
+              "Key": 0,
+              "Value": 1
+            }
+          },
+          "MemberContainers": [
+            {
+              "ContainerID": 0,
+              "LevelSettingsData": {
+                "ContainerName": "Level",
+                "BuildingClass": 11,
+                "ExposureCategory": 0,
+                "MeanRoofHeightFriendly": "33 0 0",
+                "MeanRoofHeight": 396,
+                "ImportanceCategory": 1,
+                "ExposureCategoryNBCC": 0,
+                "RidgeHeightFriendly": "27 10 10",
+                "RidgeHeight": 334.646,
+                "EaveHeightFriendly": "18 0 9",
+                "EaveHeight": 216.535,
+                "DistanceChangeFriendly": "50 0 0",
+                "DistanceChange": 600
+              },
+              "Members": [
+                {
+                  "ContainerID": 0,
+                  "MemberID": 0,
+                  "IDTag": 0,
+                  "PAEServiceMemberID": "463076_0",
+                  "PAEVersion": "8.5.1.3",
+                  "PAEDataVersion": "26.12.18.51",
+                  "MemberName": "Floor: Joist",
+                  "MemberType": 1,
+                  "MemberTypeStringTag": "joist",
+                  "StructuralSystem": 1,
+                  "StructuralSystemStringTag": "floor",
+                  "Notes": "Test",
+                  "IsDesignable": true,
+                  "ProblemIsDesigned": false,
+                  "HasValidPaeSolution": true,
+                  "WaitingOnDesignOfLinkedMember": false,
+                  "MemberPitch": 0,
+                  "LoadBearingLength": 3.5,
+                  "LoadBearingLengthFriendly": "3.50\"",
+                  "IsPlank": false,
+                  "IsWindSill": false,
+                  "ApplySeismicOverstrength": false,
+                  "AllowUpwardDeflections": false,
+                  "RemoveUpliftLimit": false,
+                  "RepetitiveMemberIncrease": true,
+                  "AllowWebStiffenersEndSupports": false,
+                  "AllowWebStiffenersIntermediateSupports": true,
+                  "AllowReinforcedCantilevers": false,
+                  "DeflectionCriteriaSetting": 2,
+                  "WallConfiguration": 0,
+                  "LiveDeflectionRatio": 600,
+                  "TotalDeflectionRatio": 240,
+                  "AllowNegativeSupportRemoval": false,
+                  "LOverValueIBC": 120,
+                  "LOverValueNBCC": 180,
+                  "SeriesID": 20139,
+                  "ProductID": 1862,
+                  "Depth": 11.875,
+                  "Spacing": 16,
+                  "Plies": 2,
+                  "MaterialQuantity": 1,
+                  "MemberLength": 184.5,
+                  "ProductLabel": "2 piece(s) 11 7/8\" TJI® 210 @ 16\" OC  ",
+                  "ErrorString": "",
+                  "DesignResult": "ND",
+                  "UtilizationPercent": "34%",
+                  "UtilizationCode": "drtLiveLoadDeflection"
+                },
+                {
+                  "ContainerID": 0,
+                  "MemberID": 1,
+                  "IDTag": 1,
+                  "PAEServiceMemberID": null,
+                  "PAEVersion": "",
+                  "PAEDataVersion": null,
+                  "MemberName": "Floor: Joist",
+                  "MemberType": 1,
+                  "MemberTypeStringTag": "joist",
+                  "StructuralSystem": 1,
+                  "StructuralSystemStringTag": "floor",
+                  "Notes": "Test",
+                  "IsDesignable": true,
+                  "ProblemIsDesigned": false,
+                  "HasValidPaeSolution": false,
+                  "WaitingOnDesignOfLinkedMember": false,
+                  "MemberPitch": 0,
+                  "LoadBearingLength": 3.5,
+                  "LoadBearingLengthFriendly": "3.50\"",
+                  "IsPlank": false,
+                  "IsWindSill": false,
+                  "ApplySeismicOverstrength": false,
+                  "AllowUpwardDeflections": false,
+                  "RemoveUpliftLimit": false,
+                  "RepetitiveMemberIncrease": true,
+                  "AllowWebStiffenersEndSupports": false,
+                  "AllowWebStiffenersIntermediateSupports": true,
+                  "AllowReinforcedCantilevers": false,
+                  "DeflectionCriteriaSetting": 0,
+                  "WallConfiguration": 0,
+                  "LiveDeflectionRatio": 480,
+                  "TotalDeflectionRatio": 240,
+                  "AllowNegativeSupportRemoval": false,
+                  "LOverValueIBC": 120,
+                  "LOverValueNBCC": 180,
+                  "SeriesID": 0,
+                  "ProductID": 0,
+                  "Depth": 0,
+                  "Spacing": 0,
+                  "Plies": 0,
+                  "MaterialQuantity": 1,
+                  "MemberLength": 184.5,
+                  "ProductLabel": "",
+                  "ErrorString": "",
+                  "DesignResult": "ND",
+                  "UtilizationPercent": "",
+                  "UtilizationCode": ""
+                }
+              ]
+            }
+          ],
+          "MemberTagToLinkedReactionDictionary": {
+            "0": {
+              "FromReactions": [],
+              "ToReactions": []
+            },
+            "1": {
+              "FromReactions": [],
+              "ToReactions": []
+            }
+          }
+        },
+        "ProjectManagerData": {
+          "ProjectFileTreeID": 463076,
+          "ProjectName": "Test"
+        }
+      },
+      "MemberData": {
+        "MemberIDTag": 1,
+        "DataVersion": "4.1.0",
+        "BuildNumber": 98,
+        "SpansData": {
+          "Spans": [
+            {
+              "SpanLength": 180
+            }
+          ],
+          "HasLOH": false,
+          "HasROH": false
+        },
+        "SupportsData": {
+          "DimensionTemplate": 1,
+          "Supports": [
+            {
+              "Width": 3.5,
+              "Width_friendly": "3.50\"",
+              "Justification": 4,
+              "Configuration": 0,
+              "Material": 6,
+              "SupportType": 6,
+              "Accessory": 4,
+              "LateralConnection": 2,
+              "JustificationOptions": null
+            },
+            {
+              "Width": 3.5,
+              "Width_friendly": "3.50\"",
+              "Justification": 4,
+              "Configuration": 0,
+              "Material": 6,
+              "SupportType": 6,
+              "Accessory": 4,
+              "LateralConnection": 2,
+              "JustificationOptions": null
+            }
+          ],
+          "TopEdgeBracing": {
+            "BracingType": 0,
+            "MaxUnbracedLength": 0,
+            "MaxUnbracedLengthFriendly": "edgeMaximumAllowableResult",
+            "Comments": ""
+          },
+          "BottomEdgeBracing": {
+            "BracingType": 0,
+            "MaxUnbracedLength": 0,
+            "MaxUnbracedLengthFriendly": "edgeMaximumAllowableResult",
+            "Comments": ""
+          }
+        },
+        "HeightAndSupportsData": null,
+        "RoofGeometryData": null,
+        "ConnectorData": {
+          "ConnectorModels": {
+            "0": {
+              "NailerThicknessType": 0,
+              "SupportDepth": 0,
+              "SupportDepthMatchesMemberDepth": true,
+              "SkewAngle": 0,
+              "OffsetTopFlange": 0,
+              "ConcealedFlanges": false,
+              "SupportID": -1,
+              "SupportPlies": 1,
+              "HangerSeatIsFlat": false
+            },
+            "1": {
+              "NailerThicknessType": 0,
+              "SupportDepth": 0,
+              "SupportDepthMatchesMemberDepth": true,
+              "SkewAngle": 0,
+              "OffsetTopFlange": 0,
+              "ConcealedFlanges": false,
+              "SupportID": -1,
+              "SupportPlies": 1,
+              "HangerSeatIsFlat": false
+            }
+          }
+        },
+        "LateralConnectorData": {
+          "ConnectorModels": [
+            {
+              "SupportLabel": "",
+              "Methods": [],
+              "NailTypes": [],
+              "NailQuantity": [],
+              "NailDesignWarnings": [],
+              "ClipModels": [],
+              "ClipQuantity": [],
+              "ClipNailing": [],
+              "ClipDesignWarnings": [],
+              "MethodIndex": -1,
+              "NailTypeIndex": -1,
+              "ClipModelIndex": -1
+            },
+            {
+              "SupportLabel": "",
+              "Methods": [],
+              "NailTypes": [],
+              "NailQuantity": [],
+              "NailDesignWarnings": [],
+              "ClipModels": [],
+              "ClipQuantity": [],
+              "ClipNailing": [],
+              "ClipDesignWarnings": [],
+              "MethodIndex": -1,
+              "NailTypeIndex": -1,
+              "ClipModelIndex": -1
+            }
+          ],
+          "SelectedConnectors": [
+            "",
+            ""
+          ]
+        },
+        "MultiPlyData": {
+          "MpceResults": null,
+          "FullLengthGridData": [],
+          "SelectedGridData": [],
+          "DetailedGridData": [],
+          "DisplayType": 0,
+          "ErrorCode": 0
+        },
+        "LoadingAssistantData": null,
+        "HorizontalYAxisLoadData": {
+          "LoadsAreConsolidated": true,
+          "AdjustDeadLoads": false,
+          "RoofSlopeRise": 0,
+          "RoofSlopeRun": 12,
+          "DefaultTribWidth": 12,
+          "VerticalEccentricityType": 0,
+          "VerticalMemberOCSpacing": 0,
+          "VerticalMemberTribWidthStart": 0,
+          "VerticalMemberTribWidthEnd": 0,
+          "SelectedLoadViewPosition": 0,
+          "CllType": "",
+          "CllLocation": "",
+          "CllMag": 0,
+          "CllTrib": 24,
+          "CllComment": "",
+          "CllShared": false,
+          "WlcExposureCategory": "",
+          "WlcMeanRoofHeight": "",
+          "WlcTopographicFactor": "",
+          "WlcWindDirectionalityFactor": "",
+          "WlcBasicWindSpeed": "",
+          "WlcImportanceFactor": "",
+          "WlcOccupancyCategory": "",
+          "WlcHurricaneProneRegion": "",
+          "WlcEffectiveWindArea": "",
+          "WlcTerrainExposureCategory": "",
+          "WlcRidgeHeight": "",
+          "WlcEaveHeight": "",
+          "WlcTerrainDistanceChange": "",
+          "WlcWindPressure": "",
+          "WlcRegion": "",
+          "WlcLocation": "",
+          "LoadGroups": {
+            "0": {
+              "LoadDefs": [
+                {
+                  "LoadType": 3,
+                  "LoadCombine": false,
+                  "LoadLocations": 1,
+                  "TribWidthIsDefault": true,
+                  "StartTribWidth": 12,
+                  "EndTribWidth": 12,
+                  "Comments": "Default Load",
+                  "AdjustSlope": false,
+                  "StartLocation": 0,
+                  "EndLocation": 187,
+                  "IsFullLength": true,
+                  "RoofSlope": 0,
+                  "ViewPositionValue": 0,
+                  "DisableEditing": false,
+                  "LoadPlacement": 0,
+                  "Loads": {
+                    "0": {
+                      "LoadClass": 0,
+                      "StartMagnitude": 0,
+                      "EndMagnitude": 0
+                    },
+                    "1": {
+                      "LoadClass": 1,
+                      "StartMagnitude": 0,
+                      "EndMagnitude": 0
+                    },
+                    "2": {
+                      "LoadClass": 2,
+                      "StartMagnitude": 0,
+                      "EndMagnitude": 0
+                    },
+                    "3": {
+                      "LoadClass": 3,
+                      "StartMagnitude": 0,
+                      "EndMagnitude": 0
+                    },
+                    "4": {
+                      "LoadClass": 4,
+                      "StartMagnitude": 0.2777778,
+                      "EndMagnitude": 0.2777778
+                    },
+                    "5": {
+                      "LoadClass": 5,
+                      "StartMagnitude": 0.08333334,
+                      "EndMagnitude": 0.08333334
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "LoadClassesList": []
+        },
+        "HorizontalZAxisLoadData": {
+          "LoadsAreConsolidated": true,
+          "AdjustDeadLoads": false,
+          "RoofSlopeRise": 0,
+          "RoofSlopeRun": 12,
+          "DefaultTribWidth": 0,
+          "VerticalEccentricityType": 0,
+          "VerticalMemberOCSpacing": 0,
+          "VerticalMemberTribWidthStart": 12,
+          "VerticalMemberTribWidthEnd": 12,
+          "SelectedLoadViewPosition": 0,
+          "CllType": "Point (lb)",
+          "CllLocation": "",
+          "CllMag": 0,
+          "CllTrib": 0,
+          "CllComment": "",
+          "CllShared": false,
+          "WlcExposureCategory": null,
+          "WlcMeanRoofHeight": null,
+          "WlcTopographicFactor": null,
+          "WlcWindDirectionalityFactor": null,
+          "WlcBasicWindSpeed": null,
+          "WlcImportanceFactor": null,
+          "WlcOccupancyCategory": null,
+          "WlcHurricaneProneRegion": null,
+          "WlcEffectiveWindArea": null,
+          "WlcTerrainExposureCategory": null,
+          "WlcRidgeHeight": null,
+          "WlcEaveHeight": null,
+          "WlcTerrainDistanceChange": null,
+          "WlcWindPressure": null,
+          "WlcRegion": null,
+          "WlcLocation": null,
+          "LoadGroups": {
+            "0": {
+              "LoadDefs": []
+            }
+          },
+          "LoadClassesList": []
+        },
+        "VerticalYAxisLoadData": null,
+        "VerticalZAxisLoadData": null,
+        "FloorPerformanceData": {
+          "TJProRatingAny": false,
+          "UserMinimumTJProRating": 40,
+          "DeckingID": 4026,
+          "SheathingAttachment": 0,
+          "Strapping": 0,
+          "CeilingType": 0,
+          "UseTJIBlocking": false,
+          "PerpendicularPartitions": false,
+          "PourFlooringOverlay": false,
+          "SelectedDeckMaterial": "decking_2332Edge",
+          "SelectedStrapping": "None",
+          "SelectedCeilingType": "None",
+          "CeilingStringList": [
+            "None",
+            "Suspended",
+            "1/2\" Gypsum",
+            "5/8\" Gypsum"
+          ]
+        },
+        "HoleData": {
+          "SelectedHoleIndex": -1,
+          "Holes": []
+        },
+        "LocationAnalysisData": {
+          "LocationAnalysisPoints": [],
+          "SelectedLocation": -1
+        },
+        "TaperedEndsData": {
+          "TaperedEndInputType": 0,
+          "TaperedLeftEnd": {
+            "Height": 0,
+            "HeightFriendly": "0.00\"",
+            "Slope": 0,
+            "SlopeFriendly": "0/12",
+            "Length": 0,
+            "LengthFriendly": "0.00\"",
+            "Comment": ""
+          },
+          "TaperedRightEnd": {
+            "Height": 0,
+            "HeightFriendly": "0.00\"",
+            "Slope": 0,
+            "SlopeFriendly": "0/12",
+            "Length": 0,
+            "LengthFriendly": "0.00\"",
+            "Comment": ""
+          }
+        },
+        "NotchedFlangeData": {
+          "NotchList": [],
+          "SelectedNotchIndex": -1
+        },
+        "ProductSelectionData": {
+          "ProductGroups": [
+            {
+              "Key": 1,
+              "Value": {
+                "Name": "tji",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 8,
+              "Value": {
+                "Name": "timberstrandLSL",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "Name": "microllamLVL",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 7,
+              "Value": {
+                "Name": "parallamPSL",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 10,
+              "Value": {
+                "Name": "mechanicallyGradedMGL",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 4,
+              "Value": {
+                "Name": "commodityLumber",
+                "Selected": true
+              }
+            }
+          ],
+          "Series": [
+            {
+              "Key": 51802,
+              "Value": {
+                "Name": "2 x DF No.1",
+                "Selected": true
+              }
+            },
+            {
+              "Key": 59815,
+              "Value": {
+                "Name": "4 x DF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 565305,
+              "Value": {
+                "Name": "6 x DF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 676011,
+              "Value": {
+                "Name": "8 x DF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 51803,
+              "Value": {
+                "Name": "2 x DF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 59816,
+              "Value": {
+                "Name": "4 x DF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 565306,
+              "Value": {
+                "Name": "6 x DF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 676012,
+              "Value": {
+                "Name": "8 x DF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 51804,
+              "Value": {
+                "Name": "2 x HF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 59817,
+              "Value": {
+                "Name": "4 x HF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 565307,
+              "Value": {
+                "Name": "6 x HF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 676007,
+              "Value": {
+                "Name": "8 x HF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 51805,
+              "Value": {
+                "Name": "2 x HF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 59818,
+              "Value": {
+                "Name": "4 x HF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 565308,
+              "Value": {
+                "Name": "6 x HF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 676008,
+              "Value": {
+                "Name": "8 x HF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 51806,
+              "Value": {
+                "Name": "2 x SP No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 59819,
+              "Value": {
+                "Name": "4 x SP No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 565309,
+              "Value": {
+                "Name": "6 x SP No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 676004,
+              "Value": {
+                "Name": "8 x SP No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 51807,
+              "Value": {
+                "Name": "2 x SP No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 59820,
+              "Value": {
+                "Name": "4 x SP No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 565310,
+              "Value": {
+                "Name": "6 x SP No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 676005,
+              "Value": {
+                "Name": "8 x SP No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 565311,
+              "Value": {
+                "Name": "6 x SPF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 676009,
+              "Value": {
+                "Name": "8 x SPF No.1",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 51808,
+              "Value": {
+                "Name": "2 x SPF No.1/No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 59814,
+              "Value": {
+                "Name": "4 x SPF No.1/No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 565312,
+              "Value": {
+                "Name": "6 x SPF No.2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 676010,
+              "Value": {
+                "Name": "8 x SPF No.2",
+                "Selected": false
+              }
+            }
+          ],
+          "Depths": [
+            {
+              "Key": 1,
+              "Value": {
+                "Name": "3 1/2\"",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 4,
+              "Value": {
+                "Name": "5 1/2\"",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 7,
+              "Value": {
+                "Name": "7 1/4\"",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 23,
+              "Value": {
+                "Name": "9 1/4\"",
+                "Selected": true
+              }
+            },
+            {
+              "Key": 40,
+              "Value": {
+                "Name": "11 1/4\"",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 57,
+              "Value": {
+                "Name": "13 1/4\"",
+                "Selected": false
+              }
+            }
+          ],
+          "Spacings": [
+            {
+              "Key": 12,
+              "Value": {
+                "Name": "12\"",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 16,
+              "Value": {
+                "Name": "16\"",
+                "Selected": true
+              }
+            },
+            {
+              "Key": 19.2,
+              "Value": {
+                "Name": "19.2\"",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 24,
+              "Value": {
+                "Name": "24\"",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 32,
+              "Value": {
+                "Name": "32\"",
+                "Selected": false
+              }
+            }
+          ],
+          "Plies": [
+            {
+              "Key": 1,
+              "Value": {
+                "Name": "1",
+                "Selected": true
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "Name": "2",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 3,
+              "Value": {
+                "Name": "3",
+                "Selected": false
+              }
+            },
+            {
+              "Key": 4,
+              "Value": {
+                "Name": "4",
+                "Selected": false
+              }
+            }
+          ],
+          "Orientations": [],
+          "CustomDepth": 0,
+          "CustomSpacing": 0,
+          "CustomDepthEnabled": false,
+          "SelectedPreservativeTreatment": 0
+        },
+        "SolutionsData": {
+          "SortCriteria": {
+            "SortItem": 0,
+            "Order": 0
+          },
+          "ShowAllProducts": true,
+          "SolutionList": [],
+          "DesignResultsProductLabel": null,
+          "DesignResultsProductPasses": false,
+          "SeriesGradeList": null,
+          "SavedBestProductId": -1,
+          "SavedBestProductPlies": 0
+        },
+        "ConnectorOutputData": {
+          "DesignedConnectors": null,
+          "PreviousConnectors": null
+        },
+        "ReportOutputHorizontalData": {
+          "HorizontalMemberReportData": null,
+          "PostDesignGraphicData": null
+        },
+        "ReportOutputVerticalData": null,
+        "GraphicOutputData": {
+          "imageDataURL": "iVBORw0KGgoAAAANSUhEUgAAAyAAAAFFCAYAAAAU1omoAAAABHNCSVQICAgIfAhkiAAAELhJREFUeJzt3U9onPtawPHn9faoqAiKSdpFFtcsBJm2FrTgykLK4cAMXQohgePugmCGSgpZdHe7m0BpFPHe3YGMBVdyzUAXDfSuhAOCaQbBRbyLLtp0REFUxOv1ddEzczLN5F9P+rwn834+EGhnMpMnzQnn9533975TlGVZBgAAQIKfq3oAAACgPgQIAACQRoAAAABpBAgAAJBGgAAAAGkECAAAkEaAAAAAaQQIAACQRoAAAABpBAgAAJBGgAAAAGkECAAAkEaAAAAAaQQIAACQRoAAAABpBAgAAJBGgAAAAGkECAAAkEaAAAAAaQQIAACQRoAAAABpBAgAAJBGgAAAAGkECAAAkEaAAAAAaQQIwAdqt9tRFMXoo91uVzpPURTR7/eP/Pl9rVYrdnZ2Mkc79uufNOeHPO/7z9Xv98d+RkVRxMbGRkRE7OzsRKvVOvI8Ozs7Rx4z/Oj3+2OPa7Va0e12L2R+gLoQIADnNBgMoiiKmJ+fj7IsRx/z8/NRFEXV49VSq9WKXq935Pbd3d3Y2toa+zmtra2d+FyLi4tjn1+WZayurkan04lGo/GxvgWA2hAgAOf06NGj2NraOrKQXVtbi06nMzoS0m63R6+2D3W73bEjJa1W69gjKMNX64f3TXo1/6KOHrzvtLm63e7YHIcNA234cfh7HobC3bt3R/82u7u7xz5Xu90+8QjDcI47d+5MvP/169dx8+bNiffNzc3FwsLCyf8QX32N/f390c/78OMWFhbi6tWrpz4HAF8TIADnMBgMYnNzMz799NOJ93/22WexubkZg8Eg7t27Fw8ePBi7/+nTp3Hv3r2IeLcYX1paGjuC8v5i/9WrV1GWZTx8+DCuX78ee3t7Y6/Kr6+vX/j3eJa5nj59OjbH4dCanZ0dHXXY29uLlZWV0X3b29vRbDbj+fPnowX9Sc/15MmTWF5ePnHek45qvHjxItbX1yfG1NzcXMzPz5/677GyshL379+f+Lj5+fmYm5s79TkA+JoAATiHg4ODiIiYmZmZeP9wi87BwUEsLi5GRIyOUvT7/ej1erG4uDi67fDi+vPPPx/Fy9AwVmZmZqIsy7EtQLdv376ob2vkrHMdXpDfvn07Xr16FRHvzp9oNpujxzcajeh0Oid+zeOe6yxOipPBYBC9Xm8spiJiFCEzMzOnbsfqdrvRbDZHP8v3H7e2tmZbFsA5Xal6AIBp1ul04tmzZ9FoNGJ3dzdWV1cj4t22o16vN/GckYODg1HgTHp1/fBjms3mhc77oXPt7+9HRMSbN2+ObGu6du3aiVFx3HN9U8NoO+zhw4cxOzsbDx8+PDYiD3v69GksLS1dyDwAvOMICMA5DBfLh48GHDY8gjD8vFu3bo22YR3efhURsbq6euRk5/ePchw23EY03N60tbV1Yd/XYeeda1oNj1gdt90OgA8jQADOYWZmJlZXV+OLL76YeP+zZ89idXV19Or6cOtOt9uNXq8XN27ciIiIq1evxubm5pm/7nBrU1mWp54T8U2cd65Jj3//CMbr16+/6VgfZHjS/mGnbaE7bHd3N5rN5pk+F4CzEyAA5/Tw4cN48ODBkStcbWxsxIMHD+LJkydjt3c6nVhZWTkSJs1mc+yk6OH7Txx3dOXwZWb7/f7Yyd0X5UPmev/xvV5vdOWqfr9/5ET8LI1GI5rN5thVtNbX1089J2Xo9evXx15dC4APJ0AAzml4bsGrV6/GLh87vGLV+27duhURMbb9KuLdFaH29/dHj797926UZTnxFffFxcXodDqjz11fX4+9vb3o9XpnCoP33b1798glfYdvDnieuSZ5+/ZtrKysRFEUcf369SNbxZaWlsYuw3uS0y7De5rt7e3RLMPL9Z524vnQq1ev4tq1ax/8tQGYrCgn/d8SAC7IMDTOuvAHYLo5AgLAhZm0XevBgwejo0AA4DK8AFyY4Vax2dnZ0W3Pnz8fex8NAOrNFiwAACCNLVgAAEAaAQIAAKRxDsiU+duI+PuqhwAAuCC/GxGtqofgQgmQKbMdET+seggAgAvyvRAg08YWLAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0A+Uq32412u131GAAATBnrzHECBAAASCNAAACANLUOkH6/H0VRRFEUsbKyEpubm6O/d7vdqscDAOCSss483pWqB6hSo9GIsiwj4t3evC+//DKePHlS8VQAAFx21pnHq/UREAAAIJcAAQAA0hTl8NgQU+F7EfHDqocAALgg34uIv6x6CC6UIyAAAEAaAQIAAKQRIAAAQBoBAgAApBEgEdFut0dvDLOxsVH1OAAATAnrzKNqHyDtdjvm5+ejLMsoyzJevHhR+3enBADgm7POnKzWl+EdDAYxOzsbb9++jZmZmYiI2NnZicePH8f29nbF030Yl+EFAKbJZb0M7zSuMy9KrY+AHBwcRESM/qOIiLhx40b0er0YDAZVjQUAwCVnnXm82gdIs9msegwAAKaMdebxrlQ9wGVSFEXVIwAA1MoPvvr4tqvxWQ3nVusjIHNzc9Hr9aoeAwCAKWOdebxaHwGZm5uLiHcnCQ335718+TKazebYfr0hZQsAwFmcd51ZJ7U+AjIzMxOrq6vx6NGj0W2PHz+OpaWlCqcCAOCys848Xq0DJCLiyZMnsb+/P3qDmDt37sTy8nLVYwEAcMlZZ05W6/cBAQAActX+CAgAAJBHgAAAAGkECAAAkEaAAAAAaQQIAACQRoBERHz/+xFF8fXHy5dVTwQAwGVnjTmRy/ACAABpHAEBAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSXKl6AC7Wv/7Lm/jPf/+30d8/Kf+jwmkAAM7vp8WvjP78y7/6a/Hrv3G1wmm4aAJkyvzor/48fvzsr0d///3f9AsLAFwuf/fPb0Z//oPP/jD+aPVRhdNw0WzBAgAA0ggQAAAgjS1YU+67N36r6hEAAM7l8BYspo8AmXLf/Z3frnoEAIDz+ZsfVz0BH5EtWAAAQBoBAgAApBEgAABAGgECAACkESAAAEAaAQIAAKQRIAAAQBoBAgAApBEgAABAGgECAACkESAAAEAaAQIAAKQRIAAAQBoBAgAApBEgAABAGgECAACkESAAAEAaAQIAAKQRIAAAQBoBAgAApBEgAABAGgECAACkESAAAEAaAQIAAKQRIAAAQBoBAgAApBEgAABAGgECAACkESAAAEAaAQIAAKS5UvUAfFw/+Yd/rHoEAAAYESBT7icv/6nqEQAAYMQWLAAAII0AAQAA0hRlWZZVD8HF+bPVT+JnP/u6K3/pF/9n4ufd++Mvs0YCAJjoR39xe+Lt//XfPz/683e+83/xJ5s/zRqJBM4BmTK/8Mn/Rnxy+uddXfi9jz8MAMAHOO4FVKaDLVgAAEAaAQIAAKQRIAAAQBonoU+ZoijO9Hl+7ABA1axb6slJ6FPmB39a9QQAAGdj3VJPtmABAABpBAgAAJBGgAAAAGkECAAAkMZVsKaMq0kAAJeFdUs9uQrWlHE1CQDgsrBuqSdbsAAAgDQCBAAASCNAAACANAIEAABII0AAAIA0AgQAAEgjQAAAgDQCBAAASCNAAACANAIEAABII0AAAIA0AgQAAEgjQAAAgDQCBAAASCNAAACANAIEAABII0AAAIA0AgQAAEgjQAAAgDQCBAAASCNAAACANAIEAABII0AAAIA0AgQAAEgjQAAAgDQCBAAASCNAAACANEVZlmXVQwAAAPXgCAgAAJBGgAAAAGkECAAAkEaAAAAAaQQIAKdqtVrR7/fHbuv3+1EUxdjHxsZG7OzsRKvVqmhSAL7tBAgAJ2q1WtHr9Y7cvru7G1tbW1GW5ehjbW2tggkBuEwECAATdbvdKIoi7ty5M/H+169fx82bN4/cPjc3FwsLCx97PAAuKQFSU0VRVD0CcAmcdFTjxYsXsb6+Ptp+1W63I+JdgMzPz2eOCVxC1iL1JUAAmGh5efnY+waDQfR6vVhaWhptv4qIaLfbMTMzYysWAMfyTug1VRRF+NEDZ1UURezt7UWj0Tj2cwaDQczOzsbbt29jZmYmcTrgMrIWqS9HQAAAgDQCBIBzG16C97CDg4OICEc/ADiRACEinAgGnE+j0Yhmsxndbnd02/r6enQ6nQqnAi4za5H6cA5ITR3ed2kPJnCa484BObxg6HQ6Tj4Hzuz99Yf1SH1cqXoAAL79jlsUWCwAF0F81IstWDXnFx4AgEwCBACAyngxtH4ESI35hQcAIJsAAQCgEl4MrScnodecS94BAJBJgNSYVxwAgKo4+lFftmDVkKMeAABURYAAAJDKi6H1JkBqxuFOAACqJEAAAEjjxVAESI34hQcAoGoCBACAFF4MJUKA1IZfeAAAvg0ESE2IDwCgatYjRAgQAAAgkQABAADSCBAAACBNUdqMBwAAJHEEBAAASCNAAACANFeqHoCLUxTFuR9jBx4AkM2apd4EyJQ5zy/nh/zyAwBcBGuW+rIFCwAASCNAAACANAIEAABII0BqotVqRb/fr3oMAIAjBoNBFEUx+mi321WPxEckQGqg1WpFr9eregwAgIlmZ2fj+fPnUZZllGUZ+/v7sbGxUfVYfCQCZIp1u90oiiLu3LlT9SgAABP1+/1oNpuxuLg4uu3+/fvx4sWLCqfiYxIgU64sy1hbW6t6DACAiRqNRmxvb4/d9ubNm1hYWKhoIj62ovSuLlOjKIpjr6ldFEXs7e1Fo9E40+cDAHwsp61BiqKI58+fj46KWLNMF0dAAAD41iiKIjqdztiWLKaLAAEAoHLDK2F1Oh3bx6fclaoHAACg3gaDQczOzsbW1lYsLy9XPQ4fmSMgAABUSnzUiwABAKAy3W43IiJWVlbG3oywKIqKJ+NjcRWsKXLeK0S4ogQAUAVrlnpzBAQAAEgjQAAAgDSugjVl7JcEAC4Da5b6cg4IAACQxhYsAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAII0AAQAA0ggQAAAgjQABAADSCBAAACCNAAEAANIIEAAAIM3/A8W6lgLuMmxLAAAAAElFTkSuQmCC",
+          "LeftCantileverType": 0,
+          "RightCantileverType": 0,
+          "LeftCantileverBackspanBracing": false,
+          "RightCantileverBackspanBracing": false,
+          "WebStiffiners": [],
+          "SquashBlocks": [],
+          "EdgeBracings": [],
+          "MemberSlopeOver12": 0,
+          "OverallLengthText": "Overall Length: 15' 7\"",
+          "LocationAnalysisPoints": [],
+          "Holes": [],
+          "TaperedEndCuts": [],
+          "NotchedFlanges": [],
+          "IsRectangular": false,
+          "IsSteel": false,
+          "IsSloped": false,
+          "MemberLength": 184.5,
+          "ProblemLength": 187,
+          "BuildingCode": 20,
+          "LoadsOffMember": false,
+          "ContainInvalidDistLoad": false,
+          "Loads": [
+            {
+              "RoofEnd": 0,
+              "RoofStart": 0,
+              "DeadEnd": 0.0833333432674408,
+              "DeadStart": 0.0833333432674408,
+              "EndLocationFromLeftEndOfProblem": 187,
+              "FloorEnd": 0.2777777910232544,
+              "FloorStart": 0.2777777910232544,
+              "Id": 0,
+              "SnowEnd": 0,
+              "WindStart": 0,
+              "WindEnd": 0,
+              "SeismicStart": 0,
+              "SeismicEnd": 0,
+              "SnowStart": 0,
+              "StartLocationFromLeftEndOfProblem": 0,
+              "Type": 3,
+              "ViewPosition": 0
+            }
+          ],
+          "Depth": 0,
+          "MemberType": 1,
+          "HasLOH": false,
+          "HasROH": false,
+          "OCSpacing": 0,
+          "Spans": [
+            {
+              "IsOH": false,
+              "LengthInches": 180,
+              "LengthString": "15'"
+            }
+          ],
+          "Supports": [
+            {
+              "hasWebStiffiner": false,
+              "csDetailRequired": false,
+              "IsExterior": true,
+              "Configuration": 0,
+              "InchesFromLeftEndOfProblem": 1.75,
+              "Type": 6,
+              "Width": 3.5,
+              "Material": 6,
+              "Justification": 4,
+              "Accessory": 4
+            },
+            {
+              "hasWebStiffiner": false,
+              "csDetailRequired": false,
+              "IsExterior": true,
+              "Configuration": 0,
+              "InchesFromLeftEndOfProblem": 185.25,
+              "Type": 6,
+              "Width": 3.5,
+              "Material": 6,
+              "Justification": 4,
+              "Accessory": 4
+            }
+          ],
+          "ShowLoads": false
+        }
+      }
+    }
+  }
+}

@@ -1,11 +1,11 @@
 meta {
-  name: GetAllFileSystemData
+  name: OpenFile
   type: http
-  seq: 4
+  seq: 7
 }
 
 post {
-  url: https://fortewebapi-production.azurewebsites.net/api/FileSystem/GetAllFileSystemData
+  url: https://fortewebapi-production.azurewebsites.net/api/FileSystem/OpenFile
   body: json
   auth: bearer
 }
@@ -35,6 +35,10 @@ auth:bearer {
 
 body:json {
   {
-    "lastAccessedDate": null
+    "forteFileTreeItemId": 463076,
+    "receivedDataDate": null,
+    "previousTreeItemId": null,
+    "thisSessionId": "8ea50f0f-9570-4f1c-b168-9899fdf1838a",
+    "postResponseData": null
   }
 }
