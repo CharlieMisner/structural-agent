@@ -1,0 +1,432 @@
+meta {
+  name: AddFloorJoist
+  type: http
+  seq: 5
+}
+
+post {
+  url: https://fortewebapi-production.azurewebsites.net/api/MemberManagement/AddFloorJoist
+  body: json
+  auth: bearer
+}
+
+headers {
+  accept: application/json, text/plain, */*
+  accept-language: en-US
+  cache-control: no-cache
+  content-type: application/json
+  origin: https://forteweb.com
+  pragma: no-cache
+  priority: u=1, i
+  referer: https://forteweb.com/
+  sec-ch-ua: "Google Chrome";v="153", "Not_A Brand";v="8", "Chromium";v="153"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-platform: "macOS"
+  sec-fetch-dest: empty
+  sec-fetch-mode: cors
+  sec-fetch-site: cross-site
+  sec-fetch-storage-access: active
+  user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36
+}
+
+auth:bearer {
+  token: {{forteToken}}
+}
+
+body:json {
+  {
+    "postResponseData": {
+      "IsPostResponseDataObject": 1,
+      "FileHash": "7ptUsA0b89TV3hQggUxtMgFhaflKAGUAZgBmACcAcwAgAGcAYQBsAGwAYgBsAGEAZABkAGUAcgA6ACAAYQAgAGgAYQB1AG4AdABpAG4AZwA=",
+      "ApplicationData": {
+        "SelectedMemberIDTag": -1,
+        "DataVersion": "4.1.0",
+        "BuildNumber": 104,
+        "ProgramSettingsData": {
+          "OperatorName": "Charlie D Misner",
+          "OperatorCompany": "Napior",
+          "OperatorPhone": "(425) 445-0569",
+          "OperatorEmail": "charliemisner@gmail.com",
+          "UOM": 1,
+          "MaterialListRounding": 1,
+          "IsComparisonWoodVolume": true,
+          "CurrentCulture": "en-US",
+          "RoofDeadLoadApplication": 1
+        },
+        "JobSettingsData": {
+          "BuildingCode": 20,
+          "BuildingCodeForteWEB": 30,
+          "ProvinceSelected": "nbccnone",
+          "ProvincialCode": "nbcc2020",
+          "ConnectorMfg": 2,
+          "PostalCode": "98102",
+          "JobNotes": "",
+          "SoftwareOperator": "",
+          "LDFDead": 0.9,
+          "LDFFloor": 1,
+          "LDFWind": 1.6,
+          "LDFSnow": 1.15,
+          "LDFSeismic": 1.6,
+          "LDFRoof": 1.25,
+          "VibrationModification": true
+        },
+        "JobWindLoadingData": {
+          "DoNotApplyWindLoad": false,
+          "OccupancyCategory": 1,
+          "BasicWindSpeed": "115 mph",
+          "IsHurricaneProneRegion": false,
+          "LoadApplicationOption": 0,
+          "NbccSelectedRegion": 654730,
+          "NbccSelectedLocation": 655436,
+          "WindPressure": 0.36,
+          "NbccOriginalRegionDefault": 0
+        },
+        "JobSeismicLoadingData": {
+          "OverStrengthOmega": 2.5,
+          "OverStrengthSDS": 1,
+          "DesignCategory": 4
+        },
+        "MemberManagerData": {
+          "SelectedContainerID": -1,
+          "SelectedMemberID": -1,
+          "IsFitnesse": false,
+          "MemberTagCollection": {
+            "0": {
+              "Key": 0,
+              "Value": 0
+            },
+            "1": {
+              "Key": 0,
+              "Value": 1
+            },
+            "2": {
+              "Key": 0,
+              "Value": 2
+            },
+            "3": {
+              "Key": 0,
+              "Value": 3
+            }
+          },
+          "MemberContainers": [
+            {
+              "ContainerID": 0,
+              "LevelSettingsData": {
+                "ContainerName": "Level",
+                "BuildingClass": 11,
+                "ExposureCategory": 0,
+                "MeanRoofHeightFriendly": "33 0 0",
+                "MeanRoofHeight": 396,
+                "ImportanceCategory": 1,
+                "ExposureCategoryNBCC": 0,
+                "RidgeHeightFriendly": "27 10 10",
+                "RidgeHeight": 334.646,
+                "EaveHeightFriendly": "18 0 9",
+                "EaveHeight": 216.535,
+                "DistanceChangeFriendly": "50 0 0",
+                "DistanceChange": 600
+              },
+              "Members": [
+                {
+                  "ContainerID": 0,
+                  "MemberID": 0,
+                  "IDTag": 0,
+                  "PAEServiceMemberID": "463076_0",
+                  "PAEVersion": "8.5.1.3",
+                  "PAEDataVersion": "26.12.18.51",
+                  "D": "Floor: Joist",
+                  "MemberType": 1,
+                  "MemberTypeStringTag": "joist",
+                  "StructuralSystem": 1,
+                  "StructuralSystemStringTag": "floor",
+                  "Notes": "Test",
+                  "IsDesignable": true,
+                  "ProblemIsDesigned": true,
+                  "HasValidPaeSolution": true,
+                  "WaitingOnDesignOfLinkedMember": false,
+                  "MemberPitch": 0,
+                  "LoadBearingLength": 3.5,
+                  "LoadBearingLengthFriendly": "3.50\"",
+                  "IsPlank": false,
+                  "IsWindSill": false,
+                  "ApplySeismicOverstrength": false,
+                  "AllowUpwardDeflections": false,
+                  "RemoveUpliftLimit": false,
+                  "RepetitiveMemberIncrease": true,
+                  "AllowWebStiffenersEndSupports": false,
+                  "AllowWebStiffenersIntermediateSupports": true,
+                  "AllowReinforcedCantilevers": false,
+                  "DeflectionCriteriaSetting": 2,
+                  "WallConfiguration": 0,
+                  "LiveDeflectionRatio": 600,
+                  "TotalDeflectionRatio": 240,
+                  "AllowNegativeSupportRemoval": false,
+                  "LOverValueIBC": 120,
+                  "LOverValueNBCC": 180,
+                  "SeriesID": 20139,
+                  "ProductID": 1862,
+                  "Depth": 11.875,
+                  "Spacing": 16,
+                  "Plies": 2,
+                  "MaterialQuantity": 1,
+                  "MemberLength": 184.5,
+                  "ProductLabel": "2 piece(s) 11 7/8\" TJI\u00ae 210 @ 16\" OC  ",
+                  "ErrorString": "",
+                  "DesignResult": "passed",
+                  "UtilizationPercent": "34%",
+                  "UtilizationCode": "drtLiveLoadDeflection"
+                },
+                {
+                  "ContainerID": 0,
+                  "MemberID": 1,
+                  "IDTag": 1,
+                  "PAEServiceMemberID": "",
+                  "PAEVersion": "",
+                  "PAEDataVersion": null,
+                  "e": "Copy of Floor: Joist",
+                  "MemberType": 1,
+                  "MemberTypeStringTag": "joist",
+                  "StructuralSystem": 1,
+                  "StructuralSystemStringTag": "floor",
+                  "Notes": "Test",
+                  "IsDesignable": false,
+                  "ProblemIsDesigned": false,
+                  "HasValidPaeSolution": false,
+                  "WaitingOnDesignOfLinkedMember": false,
+                  "MemberPitch": 0,
+                  "LoadBearingLength": 3.5,
+                  "LoadBearingLengthFriendly": "3.50\"",
+                  "IsPlank": false,
+                  "IsWindSill": false,
+                  "ApplySeismicOverstrength": false,
+                  "AllowUpwardDeflections": false,
+                  "RemoveUpliftLimit": false,
+                  "RepetitiveMemberIncrease": true,
+                  "AllowWebStiffenersEndSupports": false,
+                  "AllowWebStiffenersIntermediateSupports": true,
+                  "AllowReinforcedCantilevers": false,
+                  "DeflectionCriteriaSetting": 0,
+                  "WallConfiguration": 0,
+                  "LiveDeflectionRatio": 480,
+                  "TotalDeflectionRatio": 240,
+                  "AllowNegativeSupportRemoval": false,
+                  "LOverValueIBC": 120,
+                  "LOverValueNBCC": 180,
+                  "SeriesID": 0,
+                  "ProductID": 0,
+                  "Depth": 0,
+                  "Spacing": 0,
+                  "Plies": 0,
+                  "MaterialQuantity": 1,
+                  "MemberLength": 148.5,
+                  "ProductLabel": "",
+                  "ErrorString": "",
+                  "DesignResult": "ND",
+                  "UtilizationPercent": null,
+                  "UtilizationCode": null
+                },
+                {
+                  "ContainerID": 0,
+                  "MemberID": 2,
+                  "IDTag": 2,
+                  "PAEServiceMemberID": "463076_2",
+                  "PAEVersion": "8.5.1.3",
+                  "PAEDataVersion": "26.12.18.51",
+                  "v": "Floor: Joist2",
+                  "MemberType": 1,
+                  "MemberTypeStringTag": "joist",
+                  "StructuralSystem": 1,
+                  "StructuralSystemStringTag": "floor",
+                  "Notes": "Test",
+                  "IsDesignable": true,
+                  "ProblemIsDesigned": true,
+                  "HasValidPaeSolution": true,
+                  "WaitingOnDesignOfLinkedMember": false,
+                  "MemberPitch": 0,
+                  "LoadBearingLength": 3.5,
+                  "LoadBearingLengthFriendly": "3.50\"",
+                  "IsPlank": false,
+                  "IsWindSill": false,
+                  "ApplySeismicOverstrength": false,
+                  "AllowUpwardDeflections": false,
+                  "RemoveUpliftLimit": false,
+                  "RepetitiveMemberIncrease": true,
+                  "AllowWebStiffenersEndSupports": false,
+                  "AllowWebStiffenersIntermediateSupports": true,
+                  "AllowReinforcedCantilevers": false,
+                  "DeflectionCriteriaSetting": 0,
+                  "WallConfiguration": 0,
+                  "LiveDeflectionRatio": 480,
+                  "TotalDeflectionRatio": 240,
+                  "AllowNegativeSupportRemoval": false,
+                  "LOverValueIBC": 120,
+                  "LOverValueNBCC": 180,
+                  "SeriesID": 51802,
+                  "ProductID": 51847,
+                  "Depth": 9.25,
+                  "Spacing": 16,
+                  "Plies": 1,
+                  "MaterialQuantity": 1,
+                  "MemberLength": 184.5,
+                  "ProductLabel": "1 piece(s) 2 x 10 DF No.1 @ 16\" OC  ",
+                  "ErrorString": "",
+                  "DesignResult": "passed",
+                  "UtilizationPercent": "100%",
+                  "UtilizationCode": "drtLiveLoadDeflection"
+                },
+                {
+                  "ContainerID": 0,
+                  "MemberID": 3,
+                  "IDTag": 3,
+                  "PAEServiceMemberID": "463076_3",
+                  "PAEVersion": "8.5.1.3",
+                  "PAEDataVersion": "26.12.18.51",
+                  "MemberName": "Floor: Joist Dev Test ",
+                  "MemberType": 1,
+                  "MemberTypeStringTag": "joist",
+                  "StructuralSystem": 1,
+                  "StructuralSystemStringTag": "floor",
+                  "Notes": "Test",
+                  "IsDesignable": true,
+                  "ProblemIsDesigned": true,
+                  "HasValidPaeSolution": true,
+                  "WaitingOnDesignOfLinkedMember": false,
+                  "MemberPitch": 0,
+                  "LoadBearingLength": 3.5,
+                  "LoadBearingLengthFriendly": "3.50\"",
+                  "IsPlank": false,
+                  "IsWindSill": false,
+                  "ApplySeismicOverstrength": false,
+                  "AllowUpwardDeflections": false,
+                  "RemoveUpliftLimit": false,
+                  "RepetitiveMemberIncrease": true,
+                  "AllowWebStiffenersEndSupports": false,
+                  "AllowWebStiffenersIntermediateSupports": true,
+                  "AllowReinforcedCantilevers": false,
+                  "DeflectionCriteriaSetting": 0,
+                  "WallConfiguration": 0,
+                  "LiveDeflectionRatio": 480,
+                  "TotalDeflectionRatio": 240,
+                  "AllowNegativeSupportRemoval": false,
+                  "LOverValueIBC": 120,
+                  "LOverValueNBCC": 180,
+                  "SeriesID": 51802,
+                  "ProductID": 51847,
+                  "Depth": 9.25,
+                  "Spacing": 16,
+                  "Plies": 1,
+                  "MaterialQuantity": 1,
+                  "MemberLength": 184.5,
+                  "ProductLabel": "1 piece(s) 2 x 10 DF No.1 @ 16\" OC  ",
+                  "ErrorString": "",
+                  "DesignResult": "passed",
+                  "UtilizationPercent": "100%",
+                  "UtilizationCode": "drtLiveLoadDeflection"
+                },
+                {
+                "ContainerID": 0,
+                "MemberID": 4,
+                "IDTag": 4,
+                "PAEServiceMemberID": null,
+                "PAEVersion": "",
+                "PAEDataVersion": null,
+                "MemberName": "Floor: Joist",
+                "MemberType": 1,
+                "MemberTypeStringTag": "joist",
+                "StructuralSystem": 1,
+                "StructuralSystemStringTag": "floor",
+                "Notes": "Test",
+                "IsDesignable": false,
+                "ProblemIsDesigned": false,
+                "HasValidPaeSolution": false,
+                "WaitingOnDesignOfLinkedMember": false,
+                "MemberPitch": 0.0,
+                "LoadBearingLength": 3.5,
+                "LoadBearingLengthFriendly": "3.50\"",
+                "IsPlank": false,
+                "IsWindSill": false,
+                "ApplySeismicOverstrength": false,
+                "AllowUpwardDeflections": false,
+                "RemoveUpliftLimit": false,
+                "RepetitiveMemberIncrease": true,
+                "AllowWebStiffenersEndSupports": false,
+                "AllowWebStiffenersIntermediateSupports": true,
+                "AllowReinforcedCantilevers": false,
+                "DeflectionCriteriaSetting": 0,
+                "WallConfiguration": 0,
+                "LiveDeflectionRatio": 480.0,
+                "TotalDeflectionRatio": 240.0,
+                "AllowNegativeSupportRemoval": false,
+                "LOverValueIBC": 120,
+                "LOverValueNBCC": 180,
+                "SeriesID": 0,
+                "ProductID": 0,
+                "Depth": 0.0,
+                "Spacing": 0.0,
+                "Plies": 0,
+                "MaterialQuantity": 1,
+                "MemberLength": 0.0,
+                "ProductLabel": "",
+                "ErrorString": "",
+                "DesignResult": "ND",
+                "UtilizationPercent": "",
+                "UtilizationCode": ""
+              }
+              ]
+            }
+          ],
+          "MemberTagToLinkedReactionDictionary": {
+            "0": {
+              "FromReactions": [],
+              "ToReactions": []
+            },
+            "1": {
+              "FromReactions": [],
+              "ToReactions": []
+            },
+            "2": {
+              "FromReactions": [],
+              "ToReactions": []
+            },
+            "3": {
+              "FromReactions": [],
+              "ToReactions": []
+            }
+          }
+        },
+        "ProjectManagerData": {
+          "ProjectFileTreeID": 463076,
+          "ProjectName": "Test"
+        }
+      },
+      "MemberData": {
+        "MemberIDTag": 0,
+        "DataVersion": "4.1.0",
+        "BuildNumber": 98,
+        "SpansData": null,
+        "SupportsData": null,
+        "HeightAndSupportsData": null,
+        "RoofGeometryData": null,
+        "ConnectorData": null,
+        "LateralConnectorData": null,
+        "MultiPlyData": null,
+        "LoadingAssistantData": null,
+        "HorizontalYAxisLoadData": null,
+        "HorizontalZAxisLoadData": null,
+        "VerticalYAxisLoadData": null,
+        "VerticalZAxisLoadData": null,
+        "FloorPerformanceData": null,
+        "HoleData": null,
+        "LocationAnalysisData": null,
+        "TaperedEndsData": null,
+        "NotchedFlangeData": null,
+        "ProductSelectionData": null,
+        "SolutionsData": null,
+        "ConnectorOutputData": null,
+        "ReportOutputHorizontalData": null,
+        "ReportOutputVerticalData": null,
+        "GraphicOutputData": null
+      }
+    }
+  }
+}

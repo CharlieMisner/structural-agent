@@ -29,5 +29,23 @@ headers {
 }
 
 body:text {
-  grant_type=password&username=charliemisner@gmail.com&password=REPLACEME
+  grant_type=password&username=charliemisner@gmail.com&password=ubg%40MZP%40mxn3dap%40bgt
+}
+
+vars:post-response {
+  forteToken: res.body.access_token
+}
+
+script:post-response {
+  let data = res.getBody();
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch (e) {}
+  }
+  const token = data ? (data.access_token || data.accessToken) : null;
+  if (token) {
+    bru.setEnvVar("forteToken", token);
+    bru.setVar("forteToken", token);
+  }
 }

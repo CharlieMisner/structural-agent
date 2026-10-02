@@ -30,6 +30,12 @@ pub struct ToolConfig {
     pub token_expires_at: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub added_at: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub forte_user_root_id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_file_tree_id: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -459,6 +465,273 @@ fn authenticate_forteweb(username: String, password: String) -> Result<ForteToke
     Err(format!("Authentication failed: {}", response_str))
 }
 
+fn current_utc_iso8601() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+    let total_secs = duration.as_secs();
+    let millis = duration.subsec_millis();
+
+    let sec = (total_secs % 60) as u32;
+    let min = ((total_secs / 60) % 60) as u32;
+    let hour = ((total_secs / 3600) % 24) as u32;
+    let mut days = (total_secs / 86400) as i64;
+
+    let mut year = 1970;
+    loop {
+        let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+        let days_in_year = if leap { 366 } else { 365 };
+        if days >= days_in_year {
+            days -= days_in_year;
+            year += 1;
+        } else {
+            break;
+        }
+    }
+
+    let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    let month_days = [
+        31, if leap { 29 } else { 28 }, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31,
+    ];
+    let mut month = 1;
+    for &d in &month_days {
+        if days >= d {
+            days -= d;
+            month += 1;
+        } else {
+            break;
+        }
+    }
+    let day = (days + 1) as u32;
+
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
+        year, month, day, hour, min, sec, millis
+    )
+}
+
+#[tauri::command]
+fn init_forte_project_file(
+    project_path: String,
+    token: Option<String>,
+    username: Option<String>,
+) -> Result<ToolConfig, String> {
+    let p = Path::new(&project_path);
+    let mut config = ensure_statikor_project(p)?;
+    let mut tools = config.tools.unwrap_or_default();
+
+    let existing_idx = tools.iter().position(|t| t.id == "forteweb");
+    if let Some(idx) = existing_idx {
+        if tools[idx].file_id.is_some() || tools[idx].project_file_tree_id.is_some() {
+            return Ok(tools[idx].clone());
+        }
+    }
+
+    // Determine bearer token
+    let bearer_token = match token.filter(|t| !t.trim().is_empty()) {
+        Some(t) => t,
+        None => {
+            let user_hint = username.as_ref().or_else(|| {
+                existing_idx.and_then(|idx| tools[idx].username.as_ref())
+            });
+            let mut resolved = None;
+            if let Some(u) = user_hint {
+                if let Ok(tok) = get_keychain_secret("com.statikor.forteweb".to_string(), u.clone()) {
+                    resolved = Some(tok);
+                }
+            }
+            if resolved.is_none() {
+                if let Ok(file_path) = get_fallback_credentials_file() {
+                    if file_path.exists() {
+                        if let Ok(content) = fs::read_to_string(&file_path) {
+                            if let Ok(map) = serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&content) {
+                                for (k, v) in map {
+                                    if k.starts_with("com.statikor.forteweb:") {
+                                        if let Some(s) = v.as_str() {
+                                            resolved = Some(s.to_string());
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            resolved.ok_or_else(|| "Forte authentication token not found. Please sign in.".to_string())?
+        }
+    };
+
+    // 1. GetAllFileSystemData
+    eprintln!("[Statikor Forte Init] Querying GetAllFileSystemData...");
+    let output_fs = Command::new("curl")
+        .args([
+            "-s",
+            "--url", "https://fortewebapi-production.azurewebsites.net/api/FileSystem/GetAllFileSystemData",
+            "-H", "accept: application/json, text/plain, */*",
+            "-H", "accept-language: en-US",
+            "-H", &format!("authorization: Bearer {}", bearer_token),
+            "-H", "cache-control: no-cache",
+            "-H", "content-type: application/json",
+            "-H", "origin: https://forteweb.com",
+            "-H", "pragma: no-cache",
+            "-H", "priority: u=1, i",
+            "-H", "referer: https://forteweb.com/",
+            "-H", "sec-ch-ua: \"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+            "-H", "sec-ch-ua-mobile: ?0",
+            "-H", "sec-ch-ua-platform: \"macOS\"",
+            "-H", "sec-fetch-dest: empty",
+            "-H", "sec-fetch-mode: cors",
+            "-H", "sec-fetch-site: cross-site",
+            "-H", "sec-fetch-storage-access: active",
+            "-H", "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+            "--data-raw", "{\"lastAccessedDate\":null}",
+        ])
+        .output()
+        .map_err(|e| format!("Failed to execute GetAllFileSystemData curl: {}", e))?;
+
+    let fs_str = String::from_utf8_lossy(&output_fs.stdout).to_string();
+    let fs_json: serde_json::Value = serde_json::from_str(&fs_str)
+        .map_err(|e| format!("Failed to parse GetAllFileSystemData response: {} ({})", e, fs_str.chars().take(200).collect::<String>()))?;
+
+    // Search for the tree item where text is "Root"
+    let mut forte_user_root_id: Option<i64> = None;
+    if let Some(items) = fs_json.get("allTreeItems").and_then(|v| v.as_array()) {
+        for item in items {
+            let text = item.get("text").or_else(|| item.get("Text")).and_then(|t| t.as_str());
+            if text == Some("Root") {
+                if let Some(id) = item.get("id").and_then(|i| i.as_i64()) {
+                    forte_user_root_id = Some(id);
+                    break;
+                }
+            }
+        }
+    }
+    if forte_user_root_id.is_none() {
+        if let Some(roots) = fs_json.get("treeRoots").and_then(|r| r.as_array()) {
+            if let Some(first) = roots.first() {
+                if let Some(id) = first.get("RootTreeItemID").and_then(|i| i.as_i64()) {
+                    forte_user_root_id = Some(id);
+                }
+            }
+        }
+    }
+
+    let root_id = forte_user_root_id
+        .ok_or_else(|| "Could not find Root folder (forteUserRootId) in Forte file system".to_string())?;
+
+    // 2. AddNewFile
+    let folder_name = p.file_name().and_then(|s| s.to_str()).unwrap_or("Statikor Project");
+    let received_date = current_utc_iso8601();
+    let add_body = serde_json::json!({
+        "parentFolderId": root_id,
+        "fileName": folder_name,
+        "receivedDataDate": received_date,
+        "previousFileIdToClose": null,
+    }).to_string();
+
+    eprintln!("[Statikor Forte Init] Creating new file for folder: {} (parentFolderId: {})", folder_name, root_id);
+    let output_add = Command::new("curl")
+        .args([
+            "-s",
+            "--url", "https://fortewebapi-production.azurewebsites.net/api/FileSystem/AddNewFile",
+            "-H", "accept: application/json, text/plain, */*",
+            "-H", "accept-language: en-US",
+            "-H", &format!("authorization: Bearer {}", bearer_token),
+            "-H", "cache-control: no-cache",
+            "-H", "content-type: application/json",
+            "-H", "origin: https://forteweb.com",
+            "-H", "pragma: no-cache",
+            "-H", "priority: u=1, i",
+            "-H", "referer: https://forteweb.com/",
+            "-H", "sec-ch-ua: \"Google Chrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\"",
+            "-H", "sec-ch-ua-mobile: ?0",
+            "-H", "sec-ch-ua-platform: \"macOS\"",
+            "-H", "sec-fetch-dest: empty",
+            "-H", "sec-fetch-mode: cors",
+            "-H", "sec-fetch-site: cross-site",
+            "-H", "sec-fetch-storage-access: active",
+            "-H", "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+            "--data-raw", &add_body,
+        ])
+        .output()
+        .map_err(|e| format!("Failed to execute AddNewFile curl: {}", e))?;
+
+    let add_str = String::from_utf8_lossy(&output_add.stdout).to_string();
+    let add_json: serde_json::Value = serde_json::from_str(&add_str)
+        .map_err(|e| format!("Failed to parse AddNewFile response: {} ({})", e, add_str.chars().take(200).collect::<String>()))?;
+
+    let mut project_file_tree_id: Option<i64> = None;
+    if let Some(id) = add_json
+        .get("postResponseData")
+        .and_then(|p| p.get("ApplicationData"))
+        .and_then(|a| a.get("ProjectManagerData"))
+        .and_then(|pm| pm.get("ProjectFileTreeID"))
+        .and_then(|v| v.as_i64())
+    {
+        project_file_tree_id = Some(id);
+    }
+
+    if project_file_tree_id.is_none() {
+        let needle = "\"ProjectFileTreeID\":";
+        if let Some(idx) = add_str.find(needle) {
+            let rest = &add_str[idx + needle.len()..];
+            let num_str: String = rest.chars().skip_while(|c| c.is_whitespace()).take_while(|c| c.is_digit(10)).collect();
+            if let Ok(id) = num_str.parse::<i64>() {
+                project_file_tree_id = Some(id);
+            }
+        }
+    }
+
+    let file_id = project_file_tree_id
+        .ok_or_else(|| format!("ProjectFileTreeID not found in AddNewFile response: {}", add_str.chars().take(300).collect::<String>()))?;
+
+    // 3. Update project.json
+    let now_ms = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as i64
+    };
+
+    let mut updated_tool = if let Some(idx) = existing_idx {
+        tools[idx].clone()
+    } else {
+        ToolConfig {
+            id: "forteweb".to_string(),
+            name: "ForteWEB".to_string(),
+            authenticated: true,
+            username: username.clone(),
+            added_at: Some(now_ms),
+            ..Default::default()
+        }
+    };
+
+    updated_tool.authenticated = true;
+    if username.is_some() {
+        updated_tool.username = username;
+    }
+    updated_tool.forte_user_root_id = Some(root_id);
+    updated_tool.project_file_tree_id = Some(file_id);
+    updated_tool.file_id = Some(file_id);
+
+    if let Some(idx) = existing_idx {
+        tools[idx] = updated_tool.clone();
+    } else {
+        tools.push(updated_tool.clone());
+    }
+
+    config.tools = Some(tools);
+
+    let statikor_dir = p.join(".statikor");
+    let project_file = statikor_dir.join("project.json");
+    let json_content = serde_json::to_string_pretty(&config)
+        .map_err(|e| format!("Failed to serialize project config: {}", e))?;
+    fs::write(&project_file, json_content)
+        .map_err(|e| format!("Failed to write project.json: {}", e))?;
+
+    eprintln!("[Statikor Forte Init] Successfully initialized file ID {} for project {}", file_id, folder_name);
+    Ok(updated_tool)
+}
+
 
 // ---------------------------------------------------------------------------
 // Python Agent Sidecar Management
@@ -635,7 +908,8 @@ fn main() {
             store_keychain_secret,
             get_keychain_secret,
             delete_keychain_secret,
-            authenticate_forteweb
+            authenticate_forteweb,
+            init_forte_project_file
         ])
         .build(tauri::generate_context!())
         .expect("error while building structural agent client application");

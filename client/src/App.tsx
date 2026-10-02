@@ -4,7 +4,7 @@ import darkBlueMediumDensityTheme from '@weave-design/theme-data/build/esm/darkB
 import { FileTree } from './components/FileTree';
 import { TopNav } from './components/TopNav';
 import { PromptWorkspace } from './components/PromptWorkspace';
-import { FileEntry, ProjectConfig, ProjectState } from './types/fs';
+import { FileEntry, ProjectConfig, ProjectState, ToolConfig } from './types/fs';
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 
@@ -85,11 +85,26 @@ export const App: React.FC = () => {
           invoke<FileEntry[]>('read_project_directory', { path: folderPath }),
           invoke<ProjectConfig>('get_project_config', { path: folderPath }).catch(() => null),
         ]);
+
+        let tools = projectConfig?.tools || [];
+        const forteTool = tools.find((t) => t.id === 'forteweb');
+        if (forteTool && forteTool.authenticated && !forteTool.fileId && !forteTool.projectFileTreeId) {
+          try {
+            const initializedForte = await invoke<ToolConfig>('init_forte_project_file', {
+              projectPath: folderPath,
+              username: forteTool.username,
+            });
+            tools = tools.map((t) => (t.id === 'forteweb' ? initializedForte : t));
+          } catch (initErr) {
+            console.warn('Auto-init Forte file on load warning:', initErr);
+          }
+        }
+
         setProject((prev) => ({
           ...prev,
           files: loadedFiles,
           projectId: projectConfig?.id || null,
-          tools: projectConfig?.tools || [],
+          tools,
           selectedFile: null,
           isLoading: false,
         }));
@@ -266,10 +281,10 @@ export const App: React.FC = () => {
           tools: updatedConfig.tools || [],
         }));
       } else {
-        const res = await fetch('http://127.0.0.1:41420/api/project/tool/save', {
+        const res = await fetch('http://127.0.0.1:41420/api/project/cloud-software/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectPath: project.rootPath, tool }),
+          body: JSON.stringify({ projectPath: project.rootPath, software: tool }),
         });
         if (res.ok) {
           const data = await res.json();

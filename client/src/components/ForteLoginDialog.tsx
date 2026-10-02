@@ -76,7 +76,7 @@ export const ForteLoginDialog: React.FC<ForteLoginDialogProps> = ({
           password,
         });
       } else {
-        const res = await fetch('http://127.0.0.1:41420/api/tools/forte/auth', {
+        const res = await fetch('http://127.0.0.1:41420/api/cloud-software/forte/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: cleanUser, password }),
@@ -110,8 +110,8 @@ export const ForteLoginDialog: React.FC<ForteLoginDialogProps> = ({
         });
       }
 
-      // 3. Build tool metadata (without the raw secret token)
-      const toolConfig: ToolConfig = {
+      // 3. Build base tool metadata (without the raw secret token)
+      let finalToolConfig: ToolConfig = {
         id: 'forteweb',
         name: 'ForteWEB',
         authenticated: true,
@@ -120,23 +120,43 @@ export const ForteLoginDialog: React.FC<ForteLoginDialogProps> = ({
         addedAt: Date.now(),
       };
 
-      // 4. Update project.json if a project is loaded
+      // 4. Update project.json and initialize Forte project file if project is loaded
       if (projectPath) {
-        if (isTauri()) {
-          await invoke('save_project_tool', {
-            projectPath,
-            tool: toolConfig,
-          });
-        } else {
-          await fetch('http://127.0.0.1:41420/api/project/tool/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectPath, tool: toolConfig }),
-          });
+        try {
+          if (isTauri()) {
+            finalToolConfig = await invoke<ToolConfig>('init_forte_project_file', {
+              projectPath,
+              token,
+              username: authedUsername,
+            });
+          } else {
+            const initRes = await fetch('http://127.0.0.1:41420/api/cloud-software/forte/init-file', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ projectPath, token, username: authedUsername }),
+            });
+            if (initRes.ok) {
+              finalToolConfig = await initRes.json();
+            } else {
+              await fetch('http://127.0.0.1:41420/api/project/cloud-software/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectPath, software: finalToolConfig }),
+              });
+            }
+          }
+        } catch (initErr) {
+          console.warn('Failed to initialize Forte project file, saving base config:', initErr);
+          if (isTauri()) {
+            await invoke('save_project_cloud_software', {
+              projectPath,
+              software: finalToolConfig,
+            }).catch(() => null);
+          }
         }
       }
 
-      onSuccess(toolConfig);
+      onSuccess(finalToolConfig);
       onClose();
     } catch (err: unknown) {
       console.error('Forte authentication error:', err);

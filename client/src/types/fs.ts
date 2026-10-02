@@ -13,6 +13,9 @@ export interface ToolConfig {
   username?: string;
   tokenExpiresAt?: number;
   addedAt?: number;
+  forteUserRootId?: number;
+  fileId?: number;
+  projectFileTreeId?: number;
 }
 
 export interface ProjectConfig {

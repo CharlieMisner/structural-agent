@@ -9,6 +9,7 @@ import {
   FilePdf16,
 } from '@weave-design/icons';
 import { FileEntry, ProjectState, ToolConfig } from '../types/fs';
+import { isTauri, invoke } from '@tauri-apps/api/core';
 import {
   FolderSearch,
   FolderPlus,
@@ -212,6 +213,32 @@ export const FileTree: React.FC<FileTreeProps> = ({
     setIsAddToolOpen(false);
     if (toolId === 'forteweb') {
       const existing = project.tools?.find((t) => t.id === 'forteweb');
+      if (existing?.authenticated && (!existing.fileId || !existing.projectFileTreeId) && project.rootPath) {
+        try {
+          let updatedTool: ToolConfig;
+          if (isTauri()) {
+            updatedTool = await invoke<ToolConfig>('init_forte_project_file', {
+              projectPath: project.rootPath,
+              username: existing.username,
+            });
+          } else {
+            const res = await fetch('http://127.0.0.1:41420/api/cloud-software/forte/init-file', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ projectPath: project.rootPath, username: existing.username }),
+            });
+            if (!res.ok) throw new Error('Init file failed');
+            updatedTool = await res.json();
+          }
+          if (onSaveTool) {
+            await onSaveTool(updatedTool);
+          }
+          return;
+        } catch (e) {
+          console.warn('Init file failed, opening login dialog:', e);
+        }
+      }
+
       if (!existing && onSaveTool) {
         await onSaveTool({
           id: 'forteweb',
@@ -649,8 +676,33 @@ export const FileTree: React.FC<FileTreeProps> = ({
                     return (
                       <div
                         key={tool.id}
-                        onClick={() => {
+                        onClick={async () => {
                           if (tool.id === 'forteweb') {
+                            if (isAuthed && (!tool.fileId || !tool.projectFileTreeId) && project.rootPath) {
+                              try {
+                                let updated: ToolConfig;
+                                if (isTauri()) {
+                                  updated = await invoke<ToolConfig>('init_forte_project_file', {
+                                    projectPath: project.rootPath,
+                                    username: tool.username,
+                                  });
+                                } else {
+                                  const res = await fetch('http://127.0.0.1:41420/api/cloud-software/forte/init-file', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ projectPath: project.rootPath, username: tool.username }),
+                                  });
+                                  if (!res.ok) throw new Error('Init file failed');
+                                  updated = await res.json();
+                                }
+                                if (onSaveTool) {
+                                  await onSaveTool(updated);
+                                }
+                                return;
+                              } catch (e) {
+                                console.warn('Init file click error, opening login modal:', e);
+                              }
+                            }
                             setIsForteLoginOpen(true);
                           }
                         }}
