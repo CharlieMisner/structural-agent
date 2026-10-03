@@ -1,5 +1,5 @@
 meta {
-  name: auth
+  name: 01-auth
   type: http
   seq: 1
 }
@@ -34,18 +34,4 @@ body:text {
 
 vars:post-response {
   forteToken: res.body.access_token
-}
-
-script:post-response {
-  let data = res.getBody();
-  if (typeof data === 'string') {
-    try {
-      data = JSON.parse(data);
-    } catch (e) {}
-  }
-  const token = data ? (data.access_token || data.accessToken) : null;
-  if (token) {
-    bru.setEnvVar("forteToken", token);
-    bru.setVar("forteToken", token);
-  }
 }

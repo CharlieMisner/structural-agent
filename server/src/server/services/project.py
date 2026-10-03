@@ -3,10 +3,14 @@ from pathlib import Path
 from typing import Any
 import uuid
 
+ACTIVE_PROJECT_PATH = None
+
 from server.dtos.project import CloudSoftwareConfigModel, ProjectInitResponse
 
 
 def init_project(path_str: str) -> ProjectInitResponse:
+    global ACTIVE_PROJECT_PATH
+    ACTIVE_PROJECT_PATH = path_str
     """Ensure .statikor/project.json exists in the opened project folder with a UUID."""
     proj_dir = Path(path_str)
     statikor_dir = proj_dir / ".statikor"
@@ -31,6 +35,8 @@ def init_project(path_str: str) -> ProjectInitResponse:
 
 
 def save_project_cloud_software(project_path: str, software: CloudSoftwareConfigModel) -> dict[str, Any]:
+    global ACTIVE_PROJECT_PATH
+    ACTIVE_PROJECT_PATH = project_path
     """Save or update cloud software metadata in .statikor/project.json."""
     proj_dir = Path(project_path)
     statikor_dir = proj_dir / ".statikor"

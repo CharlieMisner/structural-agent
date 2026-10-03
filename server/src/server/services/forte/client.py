@@ -1,9 +1,13 @@
 from datetime import datetime, timezone
 import json
+import urllib.request
+import urllib.error
+import uuid
 from pathlib import Path
 import re
 import subprocess
 from typing import Any
+from server.dtos.forte import FortePostResponseData, FortePayload
 from urllib.parse import quote
 
 from fastapi import HTTPException
@@ -260,3 +264,72 @@ def init_forte_project_file(
         f.write("\n")
 
     return forte_software
+
+# Constants for Forte API
+API_BASE_URL = "https://fortewebapi-production.azurewebsites.net/api"
+POST_RESPONSE_DATA_KEY = "postResponseData"
+APP_DATA_KEY = "ApplicationData"
+FILE_HASH_KEY = "FileHash"
+IS_POST_RESPONSE_KEY = "IsPostResponseDataObject"
+MEMBER_DATA_KEY = "MemberData"
+
+def _make_request(url: str, token: str, payload: dict) -> dict:
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode('utf-8'),
+        headers={
+            "accept": "application/json, text/plain, */*",
+            "content-type": "application/json",
+            "origin": "https://forteweb.com",
+            "authorization": f"Bearer {token}",
+            "user-agent": "Mozilla/5.0"
+        },
+        method="POST"
+    )
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            res_text = response.read().decode('utf-8')
+            if not res_text.strip():
+                return {}
+            return json.loads(res_text)
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode('utf-8')
+        raise HTTPException(status_code=e.code, detail=err_msg)
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=500, detail=f"URL Error: {e.reason}")
+
+
+def _get_forte_token() -> str:
+    """Retrieve the ForteWEB authentication token from the macOS keychain."""
+    try:
+        proc = subprocess.run(["security", "find-generic-password", "-s", "com.statikor.forteweb", "-w"], capture_output=True, text=True, check=True)
+        return proc.stdout.strip()
+    except subprocess.CalledProcessError:
+        raise Exception("Could not find ForteWEB token in macOS keychain.")
+
+def _get_project_file_id() -> int:
+    """Traverse upwards to find .statikor/project.json and extract the fileId for forteweb."""
+    import os
+    from server.services.project import ACTIVE_PROJECT_PATH
+    
+    current_dir = ACTIVE_PROJECT_PATH or os.path.abspath(os.getcwd())
+    
+    for _ in range(5):
+        p_path = os.path.join(current_dir, ".statikor", "project.json")
+        if os.path.exists(p_path):
+            with open(p_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                software_list = data.get("cloud-software") or data.get("cloudSoftware") or data.get("tools") or []
+                for sw in software_list:
+                    if str(sw.get("id")).lower() == "forteweb":
+                        file_id = sw.get("fileId") or sw.get("projectFileTreeId")
+                        if file_id:
+                            return int(file_id)
+        parent_dir = os.path.dirname(current_dir)
+        if parent_dir == current_dir:
+            break
+        current_dir = parent_dir
+    raise FileNotFoundError(f"Could not find fileId in any .statikor/project.json upwards from {ACTIVE_PROJECT_PATH or os.getcwd()}")
+
+

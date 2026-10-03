@@ -1,11 +1,11 @@
 meta {
-  name: 05-OpenJob
+  name: 07-SelectedJobTreeNodeChanged
   type: http
-  seq: 5
+  seq: 7
 }
 
 post {
-  url: https://fortewebapi-production.azurewebsites.net/api/Project/OpenJob
+  url: https://fortewebapi-production.azurewebsites.net/api/MemberManagement/SelectedJobTreeNodeChanged
   body: json
   auth: bearer
 }
@@ -35,9 +35,14 @@ auth:bearer {
 
 body:json {
   {
-    "postResponseData": null,
-    "value": 3011086,
-    "sessionId": "{{sessionId}}"
+    "containerId": 0,
+    "memberId": 1,
+    "postResponseData": {
+      "ApplicationData": {{ApplicationData}},
+      "FileHash": "{{FileHash}}",
+      "IsPostResponseDataObject": {{IsPostResponseDataObject}},
+      "MemberData": {{MemberData}}
+    }
   }
 }
 

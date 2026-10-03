@@ -33,7 +33,7 @@ system_message = SystemMessage(
 api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "placeholder-key"
 
 model = init_chat_model(
-    "gemini-3.8-flash",
+    "gemini-3.6-flash",
     model_provider="google_genai",
     api_key=api_key,
     temperature=0

@@ -1,7 +1,7 @@
 meta {
-  name: OpenFile
+  name: 04-OpenFile
   type: http
-  seq: 7
+  seq: 4
 }
 
 post {
@@ -35,10 +35,15 @@ auth:bearer {
 
 body:json {
   {
-    "forteFileTreeItemId": 463076,
+    "forteFileTreeItemId": 3011086,
     "receivedDataDate": null,
     "previousTreeItemId": null,
-    "thisSessionId": "8ea50f0f-9570-4f1c-b168-9899fdf1838a",
+    "thisSessionId": "{{sessionId}}",
     "postResponseData": null
   }
+}
+
+script:pre-request {
+  const { v4: uuidv4 } = require('uuid');
+  bru.setEnvVar("sessionId", uuidv4());
 }

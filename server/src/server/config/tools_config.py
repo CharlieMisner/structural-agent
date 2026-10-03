@@ -6,6 +6,7 @@ with the root agent.
 
 from typing import Dict, List
 from langchain_core.tools import BaseTool, tool
+from server.tools.forte_tools import add_forte_floor_joist
 
 
 @tool
@@ -22,6 +23,7 @@ def max_moment_ss_beam(w: float, l: float) -> float:
 # Master tool registry for the root agent
 tools: List[BaseTool] = [
     max_moment_ss_beam,
+    add_forte_floor_joist
 ]
 
 tools_by_name: Dict[str, BaseTool] = {tool.name: tool for tool in tools}

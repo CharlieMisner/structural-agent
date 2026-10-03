@@ -1,11 +1,11 @@
 meta {
-  name: 05-OpenJob
+  name: 08-SaveFile
   type: http
-  seq: 5
+  seq: 8
 }
 
 post {
-  url: https://fortewebapi-production.azurewebsites.net/api/Project/OpenJob
+  url: https://fortewebapi-production.azurewebsites.net/api/FileSystem/SaveFile
   body: json
   auth: bearer
 }
@@ -35,9 +35,12 @@ auth:bearer {
 
 body:json {
   {
-    "postResponseData": null,
-    "value": 3011086,
-    "sessionId": "{{sessionId}}"
+    "postResponseData": {
+      "ApplicationData": {{ApplicationData}},
+      "FileHash": "{{FileHash}}",
+      "IsPostResponseDataObject": {{IsPostResponseDataObject}},
+      "MemberData": {{MemberData}}
+    }
   }
 }
 

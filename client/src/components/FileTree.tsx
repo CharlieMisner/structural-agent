@@ -74,6 +74,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
   const dragStartYRef = useRef<number>(0);
   const dragStartHeightRef = useRef<number>(300);
   const sidebarContainerRef = useRef<HTMLElement>(null);
+  const toolsPaneRef = useRef<HTMLDivElement>(null);
 
   const startResizingTools = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -91,15 +92,33 @@ export const FileTree: React.FC<FileTreeProps> = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingTools) return;
+      
+      // Stop transitions during drag for smooth performance
+      if (toolsPaneRef.current) {
+        toolsPaneRef.current.style.transition = 'none';
+      }
+      
       const deltaY = dragStartYRef.current - e.clientY;
       const totalH = sidebarContainerRef.current?.clientHeight || 600;
       const minH = 75;
       const maxH = Math.max(minH, totalH - 130);
-      const nextH = Math.max(minH, Math.min(maxH, dragStartHeightRef.current + deltaY));
-      setToolsHeight(Math.round(nextH));
+      const nextH = Math.round(Math.max(minH, Math.min(maxH, dragStartHeightRef.current + deltaY)));
+      
+      // Update DOM directly to bypass React render loop
+      if (toolsPaneRef.current) {
+        toolsPaneRef.current.style.height = `${nextH}px`;
+      }
     };
 
     const handleMouseUp = () => {
+      if (toolsPaneRef.current) {
+        // Read final height from DOM and persist to React state
+        const finalH = parseInt(toolsPaneRef.current.style.height, 10);
+        if (!isNaN(finalH)) {
+          setToolsHeight(finalH);
+        }
+        toolsPaneRef.current.style.transition = ''; // Restore transitions
+      }
       setIsResizingTools(false);
     };
 
@@ -621,6 +640,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
         {/* Panel 2: Tools (Collapsible & Draggable - Defaults to 50% height) */}
         <div
+          ref={toolsPaneRef}
           style={
             isFolderOpen && isToolsOpen && toolsHeight !== null
               ? { height: `${toolsHeight}px` }

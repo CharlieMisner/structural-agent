@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Loader2, ArrowUp, Calculator } from 'lucide-react';
+import { FileText, Loader2, ArrowUp, Calculator, ChevronDown, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -30,6 +30,59 @@ const SUGGESTIONS = [
   'Calculate seismic loads',
   'Calculate wind loads',
 ];
+
+
+const ToolCallCard = ({ tc }: { tc: ToolCallRecord }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <div className="rounded-lg border border-[#0d2a45] bg-[#040e1b] overflow-hidden text-xs font-mono shadow-sm">
+      <div 
+        className="flex items-center justify-between px-3.5 py-2 bg-[#06162a] cursor-pointer hover:bg-[#081a33] transition-colors"
+        style={{ borderBottomWidth: isExpanded ? '1px' : '0px', borderColor: '#0d2a45' }}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center space-x-2 text-[#00c8e6]">
+          <Calculator className="w-3.5 h-3.5 text-[#00c8e6]" />
+          <span className="font-semibold text-hud-text">
+            {tc.tool === 'max_moment_ss_beam'
+              ? 'Simply Supported Beam Moment Calculator'
+              : tc.tool === 'add_forte_floor_joist'
+              ? 'ForteWEB Add Floor Joist'
+              : tc.tool}
+          </span>
+        </div>
+        <div className="text-[#436480]">
+          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </div>
+      </div>
+      {isExpanded && (
+        <div className="p-3 space-y-1.5 text-[#8ba2b9]">
+          {tc.input && Object.keys(tc.input).length > 0 && (
+            <div className="flex items-baseline space-x-2">
+              <span className="text-[#436480] min-w-[55px]">Inputs:</span>
+              <span className="text-hud-text break-all">
+                {Object.entries(tc.input)
+                  .map(([k, v]) => `${k} = ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+                  .join(', ')}
+              </span>
+            </div>
+          )}
+          {tc.output !== undefined && (
+            <div className="flex items-baseline space-x-2">
+              <span className="text-[#436480] min-w-[55px]">Result:</span>
+              <span className="text-[#00e5a3] font-semibold break-all">
+                {typeof tc.output === 'object'
+                  ? JSON.stringify(tc.output)
+                  : `${tc.output}${tc.tool === 'max_moment_ss_beam' ? ' kip·ft' : ''}`}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => {
   const [input, setInput] = useState('');
@@ -208,46 +261,7 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
                   <div className="space-y-2">
                     {msg.toolCalls.map((tc, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-lg border border-[#0d2a45] bg-[#040e1b] overflow-hidden text-xs font-mono shadow-sm"
-                      >
-                        <div className="flex items-center justify-between px-3.5 py-2 bg-[#06162a] border-b border-[#0d2a45]">
-                          <div className="flex items-center space-x-2 text-[#00c8e6]">
-                            <Calculator className="w-3.5 h-3.5 text-[#00c8e6]" />
-                            <span className="font-semibold text-hud-text">
-                              {tc.tool === 'max_moment_ss_beam'
-                                ? 'Simply Supported Beam Moment Calculator'
-                                : tc.tool}
-                            </span>
-                          </div>
-                          <span className="text-[10px] uppercase tracking-wider text-[#436480] font-sans">
-                            Deterministic Calculation
-                          </span>
-                        </div>
-                        <div className="p-3 space-y-1.5 text-[#8ba2b9]">
-                          {tc.input && Object.keys(tc.input).length > 0 && (
-                            <div className="flex items-baseline space-x-2">
-                              <span className="text-[#436480] min-w-[55px]">Inputs:</span>
-                              <span className="text-hud-text">
-                                {Object.entries(tc.input)
-                                  .map(([k, v]) => `${k} = ${v}`)
-                                  .join(', ')}
-                              </span>
-                            </div>
-                          )}
-                          {tc.output !== undefined && (
-                            <div className="flex items-baseline space-x-2">
-                              <span className="text-[#436480] min-w-[55px]">Result:</span>
-                              <span className="text-[#00e5a3] font-semibold">
-                                {typeof tc.output === 'object'
-                                  ? JSON.stringify(tc.output)
-                                  : `${tc.output} kip·ft`}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <ToolCallCard key={idx} tc={tc} />
                     ))}
                   </div>
                 )}

@@ -1,11 +1,11 @@
 meta {
-  name: 05-OpenJob
+  name: 10-ModifyInteriorSpan
   type: http
-  seq: 5
+  seq: 10
 }
 
 post {
-  url: https://fortewebapi-production.azurewebsites.net/api/Project/OpenJob
+  url: https://fortewebapi-production.azurewebsites.net/api/Spans/ModifyInteriorSpan
   body: json
   auth: bearer
 }
@@ -35,9 +35,14 @@ auth:bearer {
 
 body:json {
   {
-    "postResponseData": null,
-    "value": 3011086,
-    "sessionId": "{{sessionId}}"
+    "newLength": "20",
+    "spanIndex": 0,
+    "postResponseData": {
+      "ApplicationData": {{ApplicationData}},
+      "FileHash": "{{FileHash}}",
+      "IsPostResponseDataObject": {{IsPostResponseDataObject}},
+      "MemberData": {{MemberData}}
+    }
   }
 }
 
