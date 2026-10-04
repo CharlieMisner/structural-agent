@@ -1,3 +1,4 @@
+import json
 import uuid
 from typing import Any
 from server.dtos.forte import FortePayload, FortePostResponseData
@@ -9,14 +10,21 @@ from server.services.forte.client import (
     _get_project_file_id
 )
 
+from fastapi import HTTPException
+
 def _open_file(token: str, file_tree_item_id: int, session_id: str) -> dict:
-    return _make_request(f"{API_BASE_URL}/FileSystem/OpenFile", token, {
-        "forteFileTreeItemId": file_tree_item_id,
-        "receivedDataDate": None,
-        "previousTreeItemId": None,
-        "thisSessionId": session_id,
-        POST_RESPONSE_DATA_KEY: None
-    })
+    try:
+        return _make_request(f"{API_BASE_URL}/FileSystem/OpenFile", token, {
+            "forteFileTreeItemId": file_tree_item_id,
+            "receivedDataDate": None,
+            "previousTreeItemId": None,
+            "thisSessionId": session_id,
+            POST_RESPONSE_DATA_KEY: None
+        })
+    except HTTPException as e:
+        if e.status_code == 403 and "locked_self" in str(e.detail):
+            raise RuntimeError("file is open in browser, please close the file")
+        raise e
 
 def _open_job(token: str, file_tree_item_id: int, session_id: str) -> dict:
     res = _make_request(f"{API_BASE_URL}/Project/OpenJob", token, {
@@ -27,7 +35,7 @@ def _open_job(token: str, file_tree_item_id: int, session_id: str) -> dict:
     return res.get(POST_RESPONSE_DATA_KEY) or res
 
 def _add_floor_joist(token: str, prd: dict) -> dict:
-    res = _make_request(f"{API_BASE_URL}/MemberManagement/AddFloorJoist", token, FortePayload(postResponseData=prd).model_dump())
+    res = _make_request(f"{API_BASE_URL}/MemberManagement/AddFloorJoist", token, FortePayload(postResponseData=FortePostResponseData(**prd)).model_dump(exclude_none=True))
     return res.get(POST_RESPONSE_DATA_KEY) or res
 
 def _selected_job_tree_node_changed(token: str, prd: dict) -> dict:
@@ -41,11 +49,30 @@ def _selected_job_tree_node_changed(token: str, prd: dict) -> dict:
         print(f"Error parsing DTO: {e}")
         pass
         
-    res = _make_request(f"{API_BASE_URL}/MemberManagement/SelectedJobTreeNodeChanged", token, FortePayload(postResponseData=prd, containerId=0, memberId=last_member_id).model_dump())
+    payload = FortePayload(postResponseData=FortePostResponseData(**prd)).model_dump(exclude_none=True)
+    payload["containerId"] = 0
+    payload["memberId"] = last_member_id
+    res = _make_request(f"{API_BASE_URL}/MemberManagement/SelectedJobTreeNodeChanged", token, payload)
+        
+    return res.get(POST_RESPONSE_DATA_KEY) or res
+
+def _modify_member_name(token: str, prd: dict, member_id: int, new_name: str) -> dict:
+    payload = FortePayload(postResponseData=FortePostResponseData(**prd)).model_dump(exclude_none=True)
+    payload["memberId"] = str(member_id)
+    payload["containerId"] = "0"
+    payload["newName"] = new_name
+    res = _make_request(f"{API_BASE_URL}/MemberProperties/ModifyMemberName", token, payload)
+    return res.get(POST_RESPONSE_DATA_KEY) or res
+
+def _modify_interior_span(token: str, prd: dict, span: float, span_index: int = 0) -> dict:
+    payload = FortePayload(postResponseData=FortePostResponseData(**prd)).model_dump(exclude_none=True)
+    payload["newLength"] = str(span)
+    payload["spanIndex"] = span_index
+    res = _make_request(f"{API_BASE_URL}/Spans/ModifyInteriorSpan", token, payload)
     return res.get(POST_RESPONSE_DATA_KEY) or res
 
 def _save_file(token: str, prd: dict) -> None:
-    _make_request(f"{API_BASE_URL}/FileSystem/SaveFile", token, FortePayload(postResponseData=prd).model_dump())
+    _make_request(f"{API_BASE_URL}/FileSystem/SaveFile", token, FortePayload(postResponseData=FortePostResponseData(**prd)).model_dump(exclude_none=True))
     return None
 
 def _extract_solution_summary(prd: dict) -> dict[str, Any]:
@@ -77,7 +104,7 @@ def _extract_solution_summary(prd: dict) -> dict[str, Any]:
         "product_passes": product_passes
     }
 
-def add_forte_floor_joist_to_project(token: str | None = None, file_tree_item_id: int | None = None) -> dict[str, Any]:
+def add_forte_floor_joist_to_project(token: str | None = None, file_tree_item_id: int | None = None, member_name: str | None = None, span: float | None = None) -> dict[str, Any]:
     """Adds a new floor joist member to a ForteWEB project file and saves it.
     
     Performs the full API sequence:
@@ -91,10 +118,29 @@ def add_forte_floor_joist_to_project(token: str | None = None, file_tree_item_id
     file_tree_item_id = file_tree_item_id or _get_project_file_id()
     session_id = str(uuid.uuid4())
     
-    _open_file(token, file_tree_item_id, session_id)
-    prd = _open_job(token, file_tree_item_id, session_id)
-    prd = _add_floor_joist(token, prd)
-    prd = _selected_job_tree_node_changed(token, prd)
-    _save_file(token, prd)
-    
+    try:
+        _open_file(token, file_tree_item_id, session_id)
+        prd = _open_job(token, file_tree_item_id, session_id)
+        prd = _add_floor_joist(token, prd)
+        prd = _selected_job_tree_node_changed(token, prd)
+        _save_file(token, prd)
+        
+        if member_name or span is not None:
+            # Extract member ID to use for modifications
+            parsed = FortePostResponseData(**prd)
+            member_id = 1
+            containers = parsed.ApplicationData.MemberManagerData.MemberContainers
+            if containers and containers[0].Members:
+                member_id = containers[0].Members[-1].MemberID
+                
+            if member_name:
+                prd = _modify_member_name(token, prd, member_id, member_name)
+            if span is not None:
+                prd = _modify_interior_span(token, prd, span, 0)
+                
+            _save_file(token, prd)
+            
+    except RuntimeError as e:
+        return {"status": "error", "message": str(e)}
+        
     return _extract_solution_summary(prd)

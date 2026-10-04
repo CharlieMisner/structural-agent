@@ -24,6 +24,13 @@ export const App: React.FC = () => {
   const dragStartXRef = useRef<number>(0);
   const dragStartWidthRef = useRef<number>(260);
 
+  useEffect(() => {
+    const lastProject = localStorage.getItem('statikor_last_project');
+    if (lastProject) {
+      loadFolder(lastProject);
+    }
+  }, []); // Run once on mount
+
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -64,6 +71,7 @@ export const App: React.FC = () => {
   }, [isDragging]);
 
   const loadFolder = async (folderPath: string) => {
+    localStorage.setItem('statikor_last_project', folderPath);
     const folderName = folderPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || 'Project';
     setProject((prev) => ({
       ...prev,
