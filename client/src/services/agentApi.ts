@@ -49,14 +49,33 @@ export interface StreamCallbacks {
   onError?: (error: Error) => void;
 }
 
+export interface RequestOptions {
+  authToken?: string | null;
+  signal?: AbortSignal;
+}
+
+/**
+ * Helper to build common headers including Auth0 Bearer token when provided.
+ */
+function buildHeaders(contentType?: string, authToken?: string | null): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (contentType) headers['Content-Type'] = contentType;
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  return headers;
+}
+
 /**
  * Checks whether the Python FastAPI sidecar is up and responding.
  */
-export async function checkAgentHealth(): Promise<AgentHealthResponse | null> {
+export async function checkAgentHealth(options?: RequestOptions): Promise<AgentHealthResponse | null> {
   try {
     const res = await fetch(`${AGENT_BASE_URL}/health`, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        ...buildHeaders(undefined, options?.authToken),
+      },
+      signal: options?.signal,
     });
     if (!res.ok) return null;
     return (await res.json()) as AgentHealthResponse;
@@ -68,14 +87,18 @@ export async function checkAgentHealth(): Promise<AgentHealthResponse | null> {
 /**
  * Sends a single synchronous chat request to the agent (POST /api/chat).
  */
-export async function sendChat(request: ChatRequest): Promise<ChatResponse> {
+export async function sendChat(
+  request: ChatRequest,
+  options?: RequestOptions,
+): Promise<ChatResponse> {
   const res = await fetch(`${AGENT_BASE_URL}/api/chat`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...buildHeaders('application/json', options?.authToken),
     },
     body: JSON.stringify(request),
+    signal: options?.signal,
   });
 
   if (!res.ok) {
@@ -92,16 +115,19 @@ export async function sendChat(request: ChatRequest): Promise<ChatResponse> {
 export async function streamChat(
   request: ChatRequest,
   callbacks: StreamCallbacks,
-  signal?: AbortSignal,
+  options?: RequestOptions | AbortSignal,
 ): Promise<void> {
+  const opts: RequestOptions =
+    options instanceof AbortSignal ? { signal: options } : options ?? {};
+
   const res = await fetch(`${AGENT_BASE_URL}/api/chat/stream`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       Accept: 'text/event-stream',
+      ...buildHeaders('application/json', opts.authToken),
     },
     body: JSON.stringify(request),
-    signal,
+    signal: opts.signal,
   });
 
   if (!res.ok) {
@@ -175,7 +201,7 @@ export async function streamChat(
 
     callbacks.onDone?.();
   } catch (err) {
-    if (signal?.aborted) return;
+    if (opts.signal?.aborted) return;
     callbacks.onError?.(err instanceof Error ? err : new Error(String(err)));
     throw err;
   }

@@ -1,6 +1,6 @@
 """FastAPI Sidecar Service for the Statikor Structural Engineering Agent.
 
-Runs as a local background daemon on 127.0.0.1:41420, serving the LangGraph agent
+Runs as a local background daemon on 127.0.0.1:8000, serving the LangGraph agent
 and project tools to the Tauri desktop frontend.
 """
 
@@ -20,10 +20,12 @@ else:
     load_dotenv()
 
 from server.config.tools_config import tools_by_name
+from server.controllers.auth import router as auth_router
 from server.controllers.chat import router as chat_router
 from server.controllers.forte import router as forte_router
 from server.controllers.fs import router as fs_router
 from server.controllers.project import router as project_router
+from server.services.websocket_rpc import router as rpc_router
 
 # ---------------------------------------------------------------------------
 # FastAPI App & CORS Configuration
@@ -52,10 +54,12 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Route Controllers
 # ---------------------------------------------------------------------------
+app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(fs_router)
 app.include_router(project_router)
 app.include_router(forte_router)
+app.include_router(rpc_router)
 
 
 @app.get("/health")
@@ -72,11 +76,11 @@ async def health_check():
 
 
 def start():
-    """Start the FastAPI sidecar server on 127.0.0.1:41420."""
+    """Start the FastAPI sidecar server on 127.0.0.1:8000."""
     uvicorn.run(
         "server.server:app",
         host="127.0.0.1",
-        port=41420,
+        port=8000,
         reload=True,
         log_level="info",
     )

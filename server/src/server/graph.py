@@ -53,7 +53,7 @@ def llm_call(state: MessageState):
         "llm_calls": state.get("llm_calls", 0) + 1
     }
 
-def tool_node(state: MessageState):
+async def tool_node(state: MessageState):
     result = []
     last_message = state["messages"][-1]
     if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
@@ -63,8 +63,14 @@ def tool_node(state: MessageState):
 
     for tool_call in last_message.tool_calls:
         tool = tools_by_name[tool_call["name"]]
-        observation = tool.invoke(tool_call["args"])
-        result.append(ToolMessage(content=str(observation), tool_call_id=tool_call["id"]))
+        try:
+            # Use ainvoke to support async tools (like WebSocket RPCs)
+            observation = await tool.ainvoke(tool_call["args"])
+            result.append(ToolMessage(content=str(observation), tool_call_id=tool_call["id"]))
+        except Exception as e:
+            # Catch errors to prevent the graph from crashing
+            result.append(ToolMessage(content=f"Error executing tool: {e}", tool_call_id=tool_call["id"]))
+            
     return {"messages": result}
 
 def should_continue(state: MessageState) -> str:

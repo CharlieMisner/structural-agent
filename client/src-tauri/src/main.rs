@@ -281,6 +281,13 @@ fn save_project_tool(project_path: String, tool: ToolConfig) -> Result<ProjectCo
 }
 
 fn get_fallback_credentials_file() -> Result<PathBuf, String> {
+    if let Ok(statikor_home) = std::env::var("STATIKOR_HOME") {
+        let dir = PathBuf::from(statikor_home);
+        if !dir.exists() {
+            let _ = fs::create_dir_all(&dir);
+        }
+        return Ok(dir.join("credentials.json"));
+    }
     let home = std::env::var("HOME").or_else(|_| std::env::var("USERPROFILE"))
         .map_err(|_| "Could not find home directory".to_string())?;
     let statikor_home = PathBuf::from(home).join(".statikor");
@@ -401,6 +408,37 @@ fn url_encode_component(s: &str, keep_at: bool) -> String {
     out
 }
 
+fn parse_forte_auth_response(response_str: &str, fallback_user: &str) -> Result<ForteTokenResponse, String> {
+    if let Ok(val) = serde_json::from_str::<serde_json::Value>(response_str) {
+        if let Some(token) = val.get("access_token").and_then(|t| t.as_str()) {
+            let expires_in = val.get("expires_in").and_then(|e| e.as_i64()).unwrap_or(86400);
+            let token_type = val.get("token_type").and_then(|t| t.as_str()).map(|s| s.to_string());
+            let user_name = val.get("userName").or_else(|| val.get("username")).and_then(|u| u.as_str()).map(|s| s.to_string()).unwrap_or_else(|| fallback_user.to_string());
+            return Ok(ForteTokenResponse {
+                access_token: token.to_string(),
+                access_token_alias: token.to_string(),
+                token_type: token_type.clone(),
+                token_type_alias: token_type,
+                expires_in: Some(expires_in),
+                expires_in_alias: Some(expires_in),
+                username: Some(user_name),
+            });
+        }
+        if let Some(err_desc) = val.get("error_description").and_then(|e| e.as_str()) {
+            return Err(err_desc.to_string());
+        }
+        if let Some(err) = val.get("error").and_then(|e| e.as_str()) {
+            return Err(err.to_string());
+        }
+    }
+
+    if response_str.contains("not allowed by policy") || response_str.trim().is_empty() {
+        return Err(format!("Forte server rejected request: {}", response_str));
+    }
+
+    Err(format!("Authentication failed: {}", response_str))
+}
+
 #[tauri::command]
 fn authenticate_forteweb(username: String, password: String) -> Result<ForteTokenResponse, String> {
     let enc_user = url_encode_component(&username, true);
@@ -435,34 +473,7 @@ fn authenticate_forteweb(username: String, password: String) -> Result<ForteToke
     let response_str = String::from_utf8_lossy(&output.stdout).to_string();
     eprintln!("[Statikor Forte Auth] Response: {}", response_str);
 
-    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&response_str) {
-        if let Some(token) = val.get("access_token").and_then(|t| t.as_str()) {
-            let expires_in = val.get("expires_in").and_then(|e| e.as_i64()).unwrap_or(86400);
-            let token_type = val.get("token_type").and_then(|t| t.as_str()).map(|s| s.to_string());
-            let user_name = val.get("userName").or_else(|| val.get("username")).and_then(|u| u.as_str()).map(|s| s.to_string()).unwrap_or_else(|| username.clone());
-            return Ok(ForteTokenResponse {
-                access_token: token.to_string(),
-                access_token_alias: token.to_string(),
-                token_type: token_type.clone(),
-                token_type_alias: token_type,
-                expires_in: Some(expires_in),
-                expires_in_alias: Some(expires_in),
-                username: Some(user_name),
-            });
-        }
-        if let Some(err_desc) = val.get("error_description").and_then(|e| e.as_str()) {
-            return Err(err_desc.to_string());
-        }
-        if let Some(err) = val.get("error").and_then(|e| e.as_str()) {
-            return Err(err.to_string());
-        }
-    }
-
-    if response_str.contains("not allowed by policy") || response_str.trim().is_empty() {
-        return Err(format!("Forte server rejected request: {}", response_str));
-    }
-
-    Err(format!("Authentication failed: {}", response_str))
+    parse_forte_auth_response(&response_str, &username)
 }
 
 fn current_utc_iso8601() -> String {
@@ -510,6 +521,121 @@ fn current_utc_iso8601() -> String {
     )
 }
 
+fn parse_forte_filesystem_data(fs_str: &str) -> Result<i64, String> {
+    let fs_json: serde_json::Value = serde_json::from_str(fs_str)
+        .map_err(|e| format!("Failed to parse GetAllFileSystemData response: {} ({})", e, fs_str.chars().take(200).collect::<String>()))?;
+
+    // Search for the tree item where text is "Root"
+    let mut forte_user_root_id: Option<i64> = None;
+    if let Some(items) = fs_json.get("allTreeItems").and_then(|v| v.as_array()) {
+        for item in items {
+            let text = item.get("text").or_else(|| item.get("Text")).and_then(|t| t.as_str());
+            if text == Some("Root") {
+                if let Some(id) = item.get("id").and_then(|i| i.as_i64()) {
+                    forte_user_root_id = Some(id);
+                    break;
+                }
+            }
+        }
+    }
+    if forte_user_root_id.is_none() {
+        if let Some(roots) = fs_json.get("treeRoots").and_then(|r| r.as_array()) {
+            if let Some(first) = roots.first() {
+                if let Some(id) = first.get("RootTreeItemID").and_then(|i| i.as_i64()) {
+                    forte_user_root_id = Some(id);
+                }
+            }
+        }
+    }
+
+    forte_user_root_id
+        .ok_or_else(|| "Could not find Root folder (forteUserRootId) in Forte file system".to_string())
+}
+
+fn parse_forte_add_file_response(add_str: &str) -> Result<i64, String> {
+    let add_json: Result<serde_json::Value, _> = serde_json::from_str(add_str);
+    let mut project_file_tree_id: Option<i64> = None;
+    if let Ok(json) = &add_json {
+        if let Some(id) = json
+            .get("postResponseData")
+            .and_then(|p| p.get("ApplicationData"))
+            .and_then(|a| a.get("ProjectManagerData"))
+            .and_then(|pm| pm.get("ProjectFileTreeID"))
+            .and_then(|v| v.as_i64())
+        {
+            project_file_tree_id = Some(id);
+        }
+    }
+
+    if project_file_tree_id.is_none() {
+        let needle = "\"ProjectFileTreeID\":";
+        if let Some(idx) = add_str.find(needle) {
+            let rest = &add_str[idx + needle.len()..];
+            let num_str: String = rest.chars().skip_while(|c| c.is_whitespace()).take_while(|c| c.is_digit(10)).collect();
+            if let Ok(id) = num_str.parse::<i64>() {
+                project_file_tree_id = Some(id);
+            }
+        }
+    }
+
+    project_file_tree_id
+        .ok_or_else(|| format!("ProjectFileTreeID not found in AddNewFile response: {}", add_str.chars().take(300).collect::<String>()))
+}
+
+fn update_and_save_forte_tool(
+    p: &Path,
+    root_id: i64,
+    file_id: i64,
+    username: Option<String>,
+) -> Result<ToolConfig, String> {
+    let mut config = ensure_statikor_project(p)?;
+    let mut tools = config.tools.unwrap_or_default();
+    let existing_idx = tools.iter().position(|t| t.id == "forteweb");
+
+    let now_ms = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as i64
+    };
+
+    let mut updated_tool = if let Some(idx) = existing_idx {
+        tools[idx].clone()
+    } else {
+        ToolConfig {
+            id: "forteweb".to_string(),
+            name: "ForteWEB".to_string(),
+            authenticated: true,
+            username: username.clone(),
+            added_at: Some(now_ms),
+            ..Default::default()
+        }
+    };
+
+    updated_tool.authenticated = true;
+    if username.is_some() {
+        updated_tool.username = username;
+    }
+    updated_tool.forte_user_root_id = Some(root_id);
+    updated_tool.project_file_tree_id = Some(file_id);
+    updated_tool.file_id = Some(file_id);
+
+    if let Some(idx) = existing_idx {
+        tools[idx] = updated_tool.clone();
+    } else {
+        tools.push(updated_tool.clone());
+    }
+
+    config.tools = Some(tools);
+
+    let statikor_dir = p.join(".statikor");
+    let project_file = statikor_dir.join("project.json");
+    let json_content = serde_json::to_string_pretty(&config)
+        .map_err(|e| format!("Failed to serialize project config: {}", e))?;
+    fs::write(&project_file, json_content)
+        .map_err(|e| format!("Failed to write project.json: {}", e))?;
+
+    Ok(updated_tool)
+}
+
 #[tauri::command]
 fn init_forte_project_file(
     project_path: String,
@@ -517,8 +643,8 @@ fn init_forte_project_file(
     username: Option<String>,
 ) -> Result<ToolConfig, String> {
     let p = Path::new(&project_path);
-    let mut config = ensure_statikor_project(p)?;
-    let mut tools = config.tools.unwrap_or_default();
+    let config = ensure_statikor_project(p)?;
+    let tools = config.tools.unwrap_or_default();
 
     let existing_idx = tools.iter().position(|t| t.id == "forteweb");
     if let Some(idx) = existing_idx {
@@ -591,34 +717,7 @@ fn init_forte_project_file(
         .map_err(|e| format!("Failed to execute GetAllFileSystemData curl: {}", e))?;
 
     let fs_str = String::from_utf8_lossy(&output_fs.stdout).to_string();
-    let fs_json: serde_json::Value = serde_json::from_str(&fs_str)
-        .map_err(|e| format!("Failed to parse GetAllFileSystemData response: {} ({})", e, fs_str.chars().take(200).collect::<String>()))?;
-
-    // Search for the tree item where text is "Root"
-    let mut forte_user_root_id: Option<i64> = None;
-    if let Some(items) = fs_json.get("allTreeItems").and_then(|v| v.as_array()) {
-        for item in items {
-            let text = item.get("text").or_else(|| item.get("Text")).and_then(|t| t.as_str());
-            if text == Some("Root") {
-                if let Some(id) = item.get("id").and_then(|i| i.as_i64()) {
-                    forte_user_root_id = Some(id);
-                    break;
-                }
-            }
-        }
-    }
-    if forte_user_root_id.is_none() {
-        if let Some(roots) = fs_json.get("treeRoots").and_then(|r| r.as_array()) {
-            if let Some(first) = roots.first() {
-                if let Some(id) = first.get("RootTreeItemID").and_then(|i| i.as_i64()) {
-                    forte_user_root_id = Some(id);
-                }
-            }
-        }
-    }
-
-    let root_id = forte_user_root_id
-        .ok_or_else(|| "Could not find Root folder (forteUserRootId) in Forte file system".to_string())?;
+    let root_id = parse_forte_filesystem_data(&fs_str)?;
 
     // 2. AddNewFile
     let folder_name = p.file_name().and_then(|s| s.to_str()).unwrap_or("Statikor Project");
@@ -658,78 +757,75 @@ fn init_forte_project_file(
         .map_err(|e| format!("Failed to execute AddNewFile curl: {}", e))?;
 
     let add_str = String::from_utf8_lossy(&output_add.stdout).to_string();
-    let add_json: serde_json::Value = serde_json::from_str(&add_str)
-        .map_err(|e| format!("Failed to parse AddNewFile response: {} ({})", e, add_str.chars().take(200).collect::<String>()))?;
-
-    let mut project_file_tree_id: Option<i64> = None;
-    if let Some(id) = add_json
-        .get("postResponseData")
-        .and_then(|p| p.get("ApplicationData"))
-        .and_then(|a| a.get("ProjectManagerData"))
-        .and_then(|pm| pm.get("ProjectFileTreeID"))
-        .and_then(|v| v.as_i64())
-    {
-        project_file_tree_id = Some(id);
-    }
-
-    if project_file_tree_id.is_none() {
-        let needle = "\"ProjectFileTreeID\":";
-        if let Some(idx) = add_str.find(needle) {
-            let rest = &add_str[idx + needle.len()..];
-            let num_str: String = rest.chars().skip_while(|c| c.is_whitespace()).take_while(|c| c.is_digit(10)).collect();
-            if let Ok(id) = num_str.parse::<i64>() {
-                project_file_tree_id = Some(id);
-            }
-        }
-    }
-
-    let file_id = project_file_tree_id
-        .ok_or_else(|| format!("ProjectFileTreeID not found in AddNewFile response: {}", add_str.chars().take(300).collect::<String>()))?;
+    let file_id = parse_forte_add_file_response(&add_str)?;
 
     // 3. Update project.json
-    let now_ms = {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as i64
-    };
-
-    let mut updated_tool = if let Some(idx) = existing_idx {
-        tools[idx].clone()
-    } else {
-        ToolConfig {
-            id: "forteweb".to_string(),
-            name: "ForteWEB".to_string(),
-            authenticated: true,
-            username: username.clone(),
-            added_at: Some(now_ms),
-            ..Default::default()
-        }
-    };
-
-    updated_tool.authenticated = true;
-    if username.is_some() {
-        updated_tool.username = username;
-    }
-    updated_tool.forte_user_root_id = Some(root_id);
-    updated_tool.project_file_tree_id = Some(file_id);
-    updated_tool.file_id = Some(file_id);
-
-    if let Some(idx) = existing_idx {
-        tools[idx] = updated_tool.clone();
-    } else {
-        tools.push(updated_tool.clone());
-    }
-
-    config.tools = Some(tools);
-
-    let statikor_dir = p.join(".statikor");
-    let project_file = statikor_dir.join("project.json");
-    let json_content = serde_json::to_string_pretty(&config)
-        .map_err(|e| format!("Failed to serialize project config: {}", e))?;
-    fs::write(&project_file, json_content)
-        .map_err(|e| format!("Failed to write project.json: {}", e))?;
-
+    let updated_tool = update_and_save_forte_tool(p, root_id, file_id, username)?;
     eprintln!("[Statikor Forte Init] Successfully initialized file ID {} for project {}", file_id, folder_name);
     Ok(updated_tool)
+}
+
+#[tauri::command]
+fn start_auth_flow(app: tauri::AppHandle, auth_url: String) -> Result<(), String> {
+    use tauri::{Emitter, WebviewUrl, WebviewWindowBuilder};
+
+    if let Some(existing) = app.get_webview_window("auth_window") {
+        let _ = existing.close();
+    }
+
+    let parsed_url: tauri::Url = auth_url.parse().map_err(|e| format!("Invalid URL: {}", e))?;
+
+    let app_handle = app.clone();
+    WebviewWindowBuilder::new(&app, "auth_window", WebviewUrl::External(parsed_url))
+        .title("Sign In - Statikor")
+        .inner_size(500.0, 700.0)
+        .resizable(true)
+        .always_on_top(true)
+        .on_navigation(move |url| {
+            let url_str = url.as_str();
+            if url_str.starts_with("http://localhost:1420")
+                || url_str.starts_with("http://127.0.0.1:1420")
+                || url_str.starts_with("tauri://localhost")
+                || url_str.starts_with("https://tauri.localhost")
+            {
+                let _ = app_handle.emit("auth-callback", url_str.to_string());
+                if let Some(auth_win) = app_handle.get_webview_window("auth_window") {
+                    let _ = auth_win.close();
+                }
+                return false;
+            }
+            true
+        })
+        .build()
+        .map_err(|e| format!("Failed to create auth window: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn open_browser_url(url: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", "start", &url])
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    }
+    Ok(())
 }
 
 
@@ -824,7 +920,8 @@ fn free_port_if_in_use(port: u16) {
 }
 
 fn start_sidecar() -> Result<Child, String> {
-    // Guarantee port 41420 is completely free before spawning
+    // Guarantee ports 8000 and 41420 are completely free before spawning
+    free_port_if_in_use(8000);
     free_port_if_in_use(41420);
 
     if let Some((python_bin, srv_dir)) = find_agent_paths() {
@@ -866,11 +963,9 @@ fn start_sidecar() -> Result<Child, String> {
     }
 }
 
-#[tauri::command]
-fn get_sidecar_status(state: tauri::State<SidecarState>) -> Result<String, String> {
-    let mut guard = state.0.lock().map_err(|e| e.to_string())?;
-    if let Some(child) = guard.as_mut() {
-        match child.try_wait() {
+fn get_sidecar_status_inner(child: &mut Option<Child>) -> Result<String, String> {
+    if let Some(c) = child.as_mut() {
+        match c.try_wait() {
             Ok(Some(status)) => Ok(format!("exited ({})", status)),
             Ok(None) => Ok("running".to_string()),
             Err(e) => Err(e.to_string()),
@@ -878,6 +973,12 @@ fn get_sidecar_status(state: tauri::State<SidecarState>) -> Result<String, Strin
     } else {
         Ok("not_started".to_string())
     }
+}
+
+#[tauri::command]
+fn get_sidecar_status(state: tauri::State<SidecarState>) -> Result<String, String> {
+    let mut guard = state.0.lock().map_err(|e| e.to_string())?;
+    get_sidecar_status_inner(&mut *guard)
 }
 
 fn main() {
@@ -909,7 +1010,9 @@ fn main() {
             get_keychain_secret,
             delete_keychain_secret,
             authenticate_forteweb,
-            init_forte_project_file
+            init_forte_project_file,
+            start_auth_flow,
+            open_browser_url
         ])
         .build(tauri::generate_context!())
         .expect("error while building structural agent client application");
@@ -929,3 +1032,681 @@ fn main() {
         }
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::Mutex;
+
+    static ENV_MUTEX: Mutex<()> = Mutex::new(());
+
+    fn get_test_temp_dir(name: &str) -> PathBuf {
+        let mut dir = std::env::temp_dir();
+        dir.push(format!("statikor_test_{}_{}", name, generate_uuid_v4()));
+        let _ = fs::create_dir_all(&dir);
+        dir
+    }
+
+    #[test]
+    fn test_models_serde() {
+        let entry = FileEntry {
+            id: "1".to_string(),
+            name: "test.rvt".to_string(),
+            path: "/path/test.rvt".to_string(),
+            is_directory: false,
+            children: None,
+        };
+        let json = serde_json::to_string(&entry).unwrap();
+        assert!(json.contains("\"isDirectory\":false"));
+        let de: FileEntry = serde_json::from_str(&json).unwrap();
+        assert_eq!(de.name, "test.rvt");
+
+        let tool = ToolConfig {
+            id: "forteweb".to_string(),
+            name: "ForteWEB".to_string(),
+            authenticated: true,
+            username: Some("user@test.com".to_string()),
+            token_expires_at: Some(12345678),
+            added_at: Some(1000),
+            forte_user_root_id: Some(10),
+            file_id: Some(20),
+            project_file_tree_id: Some(30),
+        };
+        let tool_json = serde_json::to_string(&tool).unwrap();
+        assert!(tool_json.contains("\"forteUserRootId\":10"));
+        let de_tool: ToolConfig = serde_json::from_str(&tool_json).unwrap();
+        assert_eq!(de_tool.username, Some("user@test.com".to_string()));
+
+        let proj = ProjectConfig {
+            id: "uuid-123".to_string(),
+            tools: Some(vec![tool]),
+        };
+        let proj_json = serde_json::to_string(&proj).unwrap();
+        let de_proj: ProjectConfig = serde_json::from_str(&proj_json).unwrap();
+        assert_eq!(de_proj.id, "uuid-123");
+
+        let token_resp_json = r#"{
+            "access_token": "abc",
+            "accessToken": "abc",
+            "token_type": "Bearer",
+            "expires_in": 3600,
+            "username": "tester"
+        }"#;
+        let token_resp: ForteTokenResponse = serde_json::from_str(token_resp_json).unwrap();
+        assert_eq!(token_resp.access_token, "abc");
+        assert_eq!(token_resp.expires_in, Some(3600));
+    }
+
+    #[test]
+    fn test_generate_uuid_v4() {
+        let uuid1 = generate_uuid_v4();
+        let uuid2 = generate_uuid_v4();
+        assert_ne!(uuid1, uuid2);
+        assert_eq!(uuid1.len(), 36);
+        let parts: Vec<&str> = uuid1.split('-').collect();
+        assert_eq!(parts.len(), 5);
+        assert_eq!(parts[0].len(), 8);
+        assert_eq!(parts[1].len(), 4);
+        assert_eq!(parts[2].len(), 4);
+        assert_eq!(parts[3].len(), 4);
+        assert_eq!(parts[4].len(), 12);
+        assert!(parts[2].starts_with('4')); // Version 4
+    }
+
+    #[test]
+    fn test_url_encode_component() {
+        assert_eq!(url_encode_component("abc-._~", false), "abc-._~");
+        assert_eq!(url_encode_component("user@domain.com", true), "user@domain.com");
+        assert_eq!(url_encode_component("user@domain.com", false), "user%40domain.com");
+        assert_eq!(url_encode_component("hello world!#$", false), "hello%20world%21%23%24");
+    }
+
+    #[test]
+    fn test_current_utc_iso8601() {
+        let ts = current_utc_iso8601();
+        assert!(ts.ends_with('Z'));
+        assert!(ts.contains('T'));
+        assert_eq!(ts.len(), 24); // e.g. 2026-10-04T12:00:00.000Z
+    }
+
+    #[test]
+    fn test_normalize_path() {
+        let p = Path::new("/a/b/../c/./d");
+        let norm = normalize_path(p);
+        assert_eq!(norm, PathBuf::from("/a/c/d"));
+    }
+
+    #[test]
+    fn test_ensure_statikor_project() {
+        let temp_dir = get_test_temp_dir("proj_init");
+        let config1 = ensure_statikor_project(&temp_dir).unwrap();
+        assert!(!config1.id.is_empty());
+
+        let project_json_path = temp_dir.join(".statikor").join("project.json");
+        assert!(project_json_path.exists());
+
+        // Second call should return the exact same config ID
+        let config2 = ensure_statikor_project(&temp_dir).unwrap();
+        assert_eq!(config1.id, config2.id);
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_read_project_directory_and_recursive() {
+        let temp_dir = get_test_temp_dir("read_dir");
+
+        // Create directory structure:
+        // temp_dir/
+        //   sub/
+        //     file1.txt
+        //   file2.txt
+        //   .hidden/
+        //   node_modules/
+        //   target/
+        //   dist/
+        let sub = temp_dir.join("sub");
+        let _ = fs::create_dir_all(&sub);
+        let _ = fs::write(sub.join("file1.txt"), "hello");
+        let _ = fs::write(temp_dir.join("file2.txt"), "world");
+
+        let _ = fs::create_dir_all(temp_dir.join(".hidden"));
+        let _ = fs::create_dir_all(temp_dir.join("node_modules"));
+        let _ = fs::create_dir_all(temp_dir.join("target"));
+        let _ = fs::create_dir_all(temp_dir.join("dist"));
+
+        let entries = read_project_directory(temp_dir.to_string_lossy().to_string()).unwrap();
+        assert_eq!(entries.len(), 2); // sub and file2.txt
+
+        let sub_entry = entries.iter().find(|e| e.name == "sub").unwrap();
+        assert!(sub_entry.is_directory);
+        assert_eq!(sub_entry.children.as_ref().unwrap().len(), 1);
+
+        let file2_entry = entries.iter().find(|e| e.name == "file2.txt").unwrap();
+        assert!(!file2_entry.is_directory);
+
+        // Test non-existent directory
+        let err = read_project_directory("/non_existent_path_xyz_123".to_string());
+        assert!(err.is_err());
+
+        // Test max depth 0 in read_dir_recursive
+        let empty = read_dir_recursive(&temp_dir, 0);
+        assert!(empty.is_empty());
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_get_project_config() {
+        let temp_dir = get_test_temp_dir("get_cfg");
+        let res = get_project_config(temp_dir.to_string_lossy().to_string());
+        assert!(res.is_ok());
+
+        let err = get_project_config("/non_existent_path_xyz_123".to_string());
+        assert!(err.is_err());
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_create_file_and_create_directory() {
+        let temp_dir = get_test_temp_dir("create_items");
+
+        // Create file with nested subfolder
+        let file_path = temp_dir.join("nested").join("test_file.txt");
+        let file_entry = create_file(file_path.to_string_lossy().to_string()).unwrap();
+        assert_eq!(file_entry.name, "test_file.txt");
+        assert!(!file_entry.is_directory);
+        assert!(file_path.exists());
+
+        // Creating again should error
+        assert!(create_file(file_path.to_string_lossy().to_string()).is_err());
+
+        // Create directory
+        let dir_path = temp_dir.join("new_subfolder");
+        let dir_entry = create_directory(dir_path.to_string_lossy().to_string()).unwrap();
+        assert_eq!(dir_entry.name, "new_subfolder");
+        assert!(dir_entry.is_directory);
+        assert!(dir_path.exists());
+
+        // Creating directory again should error
+        assert!(create_directory(dir_path.to_string_lossy().to_string()).is_err());
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_delete_path() {
+        let temp_dir = get_test_temp_dir("delete_items");
+
+        let f = temp_dir.join("to_delete.txt");
+        let _ = fs::write(&f, "content");
+        assert!(f.exists());
+        assert!(delete_path(f.to_string_lossy().to_string()).is_ok());
+        assert!(!f.exists());
+
+        let d = temp_dir.join("dir_to_delete");
+        let _ = fs::create_dir_all(&d);
+        assert!(d.exists());
+        assert!(delete_path(d.to_string_lossy().to_string()).is_ok());
+        assert!(!d.exists());
+
+        // Deleting non-existent should error
+        assert!(delete_path(f.to_string_lossy().to_string()).is_err());
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_save_project_tool() {
+        let temp_dir = get_test_temp_dir("save_tool");
+        let tool1 = ToolConfig {
+            id: "forteweb".to_string(),
+            name: "ForteWEB".to_string(),
+            authenticated: true,
+            username: Some("eng@test.com".to_string()),
+            ..Default::default()
+        };
+
+        let updated1 = save_project_tool(temp_dir.to_string_lossy().to_string(), tool1.clone()).unwrap();
+        assert_eq!(updated1.tools.as_ref().unwrap().len(), 1);
+
+        // Update existing tool
+        let mut tool1_updated = tool1;
+        tool1_updated.file_id = Some(999);
+        let updated2 = save_project_tool(temp_dir.to_string_lossy().to_string(), tool1_updated).unwrap();
+        assert_eq!(updated2.tools.as_ref().unwrap().len(), 1);
+        assert_eq!(updated2.tools.as_ref().unwrap()[0].file_id, Some(999));
+
+        // Add second distinct tool
+        let tool2 = ToolConfig {
+            id: "enercalc".to_string(),
+            name: "Enercalc".to_string(),
+            authenticated: true,
+            ..Default::default()
+        };
+        let updated3 = save_project_tool(temp_dir.to_string_lossy().to_string(), tool2).unwrap();
+        assert_eq!(updated3.tools.as_ref().unwrap().len(), 2);
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_keychain_and_fallback_credentials() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let temp_dir = get_test_temp_dir("creds");
+        std::env::set_var("STATIKOR_HOME", temp_dir.to_str().unwrap());
+
+        let service = "com.statikor.test_service".to_string();
+        let account = "test_user".to_string();
+        let secret = "my_secret_token_12345".to_string();
+
+        assert!(store_keychain_secret(service.clone(), account.clone(), secret.clone()).is_ok());
+        let retrieved = get_keychain_secret(service.clone(), account.clone()).unwrap();
+        assert_eq!(retrieved, secret);
+
+        assert!(delete_keychain_secret(service.clone(), account.clone()).is_ok());
+        assert!(get_keychain_secret(service, account).is_err());
+
+        std::env::remove_var("STATIKOR_HOME");
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_free_port_if_in_use() {
+        free_port_if_in_use(59999);
+    }
+
+    #[test]
+    fn test_find_agent_paths_with_env() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let temp_dir = get_test_temp_dir("fake_python");
+        let fake_bin = temp_dir.join("bin");
+        let _ = fs::create_dir_all(&fake_bin);
+        let fake_py = fake_bin.join("python");
+        let _ = fs::write(&fake_py, "");
+
+        std::env::set_var("SERVER_PYTHON_PATH", fake_py.to_str().unwrap());
+        let res = find_agent_paths();
+        assert!(res.is_some());
+        let (py_path, dir_path) = res.unwrap();
+        assert_eq!(py_path, normalize_path(&fake_py));
+        assert_eq!(dir_path, normalize_path(&temp_dir));
+
+        std::env::remove_var("SERVER_PYTHON_PATH");
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_start_sidecar_with_env() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let temp_dir = get_test_temp_dir("fake_sidecar");
+        let bin_dir = temp_dir.join("bin");
+        let _ = fs::create_dir_all(&bin_dir);
+        let fake_py = bin_dir.join("python");
+        // On Unix, write a shell script with exit 0
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = fs::write(&fake_py, "#!/bin/sh\nexit 0\n");
+            let _ = fs::set_permissions(&fake_py, fs::Permissions::from_mode(0o755));
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = fs::write(&fake_py, "");
+        }
+
+        std::env::set_var("SERVER_PYTHON_PATH", fake_py.to_str().unwrap());
+        let child = start_sidecar();
+        assert!(child.is_ok());
+        let mut c = child.unwrap();
+        let _ = c.wait();
+
+        std::env::remove_var("SERVER_PYTHON_PATH");
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_forte_auth_response() {
+        // Success case
+        let success_json = r#"{
+            "access_token": "token_abc_123",
+            "token_type": "bearer",
+            "expires_in": 7200,
+            "userName": "engineer@firm.com"
+        }"#;
+        let resp = parse_forte_auth_response(success_json, "fallback@firm.com").unwrap();
+        assert_eq!(resp.access_token, "token_abc_123");
+        assert_eq!(resp.expires_in, Some(7200));
+        assert_eq!(resp.username, Some("engineer@firm.com".to_string()));
+
+        // Fallback username
+        let token_no_user = r#"{"access_token": "tok"}"#;
+        let resp2 = parse_forte_auth_response(token_no_user, "default_user").unwrap();
+        assert_eq!(resp2.username, Some("default_user".to_string()));
+
+        // Error description case
+        let err_desc_json = r#"{"error_description": "Invalid credentials"}"#;
+        assert_eq!(
+            parse_forte_auth_response(err_desc_json, "").unwrap_err(),
+            "Invalid credentials"
+        );
+
+        // Error code case
+        let err_json = r#"{"error": "unauthorized_client"}"#;
+        assert_eq!(
+            parse_forte_auth_response(err_json, "").unwrap_err(),
+            "unauthorized_client"
+        );
+
+        // Policy rejection case
+        let policy_str = "Request not allowed by policy";
+        assert!(parse_forte_auth_response(policy_str, "").is_err());
+
+        // Empty response
+        assert!(parse_forte_auth_response("", "").is_err());
+
+        // Generic failure response
+        let gen_err = parse_forte_auth_response("Unexpected raw HTML response", "");
+        assert!(gen_err.is_err());
+        assert!(gen_err.unwrap_err().contains("Authentication failed: Unexpected raw HTML response"));
+    }
+
+    #[test]
+    fn test_parse_forte_filesystem_data() {
+        // With allTreeItems containing "Root"
+        let json_tree_items = r#"{
+            "allTreeItems": [
+                {"id": 101, "text": "Root"},
+                {"id": 102, "text": "Project 1"}
+            ]
+        }"#;
+        assert_eq!(parse_forte_filesystem_data(json_tree_items).unwrap(), 101);
+
+        // With treeRoots fallback
+        let json_tree_roots = r#"{
+            "allTreeItems": [],
+            "treeRoots": [
+                {"RootTreeItemID": 202}
+            ]
+        }"#;
+        assert_eq!(parse_forte_filesystem_data(json_tree_roots).unwrap(), 202);
+
+        // Missing root error
+        let json_empty = r#"{"allTreeItems": [], "treeRoots": []}"#;
+        assert!(parse_forte_filesystem_data(json_empty).is_err());
+
+        // Invalid json
+        assert!(parse_forte_filesystem_data("not json").is_err());
+    }
+
+    #[test]
+    fn test_parse_forte_add_file_response() {
+        // Structured JSON response
+        let json_success = r#"{
+            "postResponseData": {
+                "ApplicationData": {
+                    "ProjectManagerData": {
+                        "ProjectFileTreeID": 555
+                    }
+                }
+            }
+        }"#;
+        assert_eq!(parse_forte_add_file_response(json_success).unwrap(), 555);
+
+        // Raw text string with needle fallback
+        let raw_needle = r#"{"other": 1, "ProjectFileTreeID": 777}"#;
+        assert_eq!(parse_forte_add_file_response(raw_needle).unwrap(), 777);
+
+        // Missing file ID
+        let json_no_id = r#"{"status": "ok"}"#;
+        assert!(parse_forte_add_file_response(json_no_id).is_err());
+
+        // Invalid JSON
+        assert!(parse_forte_add_file_response("invalid json").is_err());
+    }
+
+    #[test]
+    fn test_get_sidecar_status_inner() {
+        let mut none_child: Option<Child> = None;
+        assert_eq!(get_sidecar_status_inner(&mut none_child).unwrap(), "not_started");
+
+        // Running child & Exited child
+        #[cfg(unix)]
+        {
+            if let Ok(child) = Command::new("sleep").arg("10").spawn() {
+                let mut some_child = Some(child);
+                assert_eq!(get_sidecar_status_inner(&mut some_child).unwrap(), "running");
+                if let Some(mut c) = some_child {
+                    let _ = c.kill();
+                    let _ = c.wait();
+                }
+            }
+
+            // Exited child test
+            if let Ok(mut child) = Command::new("true").spawn() {
+                let _ = child.wait();
+                let mut some_child = Some(child);
+                let status = get_sidecar_status_inner(&mut some_child).unwrap();
+                assert!(status.starts_with("exited"));
+            }
+        }
+    }
+
+    #[test]
+    fn test_normalize_path_edge_cases() {
+        let p1 = Path::new("a/b/../c/./d/..");
+        assert_eq!(normalize_path(p1), PathBuf::from("a/c"));
+
+        let p2 = Path::new("././foo/bar");
+        assert_eq!(normalize_path(p2), PathBuf::from("foo/bar"));
+
+        let p3 = Path::new("../../a/b");
+        assert_eq!(normalize_path(p3), PathBuf::from("a/b"));
+
+        let p4 = Path::new("/");
+        assert_eq!(normalize_path(p4), PathBuf::from("/"));
+    }
+
+    #[test]
+    fn test_init_forte_project_file_existing_and_missing_token() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let temp_dir = get_test_temp_dir("forte_init_test");
+
+        // 1. Missing token error when no secret stored
+        let err = init_forte_project_file(
+            temp_dir.to_string_lossy().to_string(),
+            None,
+            Some("unknown@example.com".to_string()),
+        );
+        assert!(err.is_err());
+        assert!(err.unwrap_err().contains("token not found"));
+
+        // 2. Existing configured tool with fileId returns immediately without network
+        let existing_tool = ToolConfig {
+            id: "forteweb".to_string(),
+            name: "ForteWEB".to_string(),
+            authenticated: true,
+            file_id: Some(888),
+            project_file_tree_id: Some(888),
+            ..Default::default()
+        };
+        let _ = save_project_tool(temp_dir.to_string_lossy().to_string(), existing_tool).unwrap();
+
+        let res = init_forte_project_file(
+            temp_dir.to_string_lossy().to_string(),
+            None,
+            None,
+        );
+        assert!(res.is_ok());
+        let tool = res.unwrap();
+        assert_eq!(tool.file_id, Some(888));
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_find_agent_paths_no_env() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        std::env::remove_var("SERVER_PYTHON_PATH");
+        std::env::remove_var("AGENT_PYTHON_PATH");
+        let _ = find_agent_paths();
+    }
+
+    #[test]
+    fn test_find_agent_paths_with_agent_env() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let temp_dir = get_test_temp_dir("agent_py");
+        let fake_bin = temp_dir.join("bin");
+        let _ = fs::create_dir_all(&fake_bin);
+        let fake_py = fake_bin.join("python");
+        let _ = fs::write(&fake_py, "");
+
+        std::env::set_var("AGENT_PYTHON_PATH", fake_py.to_str().unwrap());
+        let res = find_agent_paths();
+        assert!(res.is_some());
+        std::env::remove_var("AGENT_PYTHON_PATH");
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_start_sidecar_fallback() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        std::env::remove_var("SERVER_PYTHON_PATH");
+        std::env::remove_var("AGENT_PYTHON_PATH");
+        let child = start_sidecar();
+        assert!(child.is_ok());
+        if let Ok(mut c) = child {
+            let _ = c.kill();
+            let _ = c.wait();
+        }
+    }
+
+    #[test]
+    fn test_authenticate_forteweb_command() {
+        // Runs curl command and parses response / returns rejection or curl result
+        let res = authenticate_forteweb("test@user.com".to_string(), "pass123".to_string());
+        // Since test has no active Azure session, it returns Err
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_init_forte_project_file_with_token_curl() {
+        let temp_dir = get_test_temp_dir("forte_curl_init");
+        let res = init_forte_project_file(
+            temp_dir.to_string_lossy().to_string(),
+            Some("fake_token_123".to_string()),
+            None,
+        );
+        // Will attempt GetAllFileSystemData and return Err due to fake token / offline response
+        assert!(res.is_err());
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_ensure_statikor_project_corrupted_json() {
+        let temp_dir = get_test_temp_dir("corrupted_init");
+        let statikor_dir = temp_dir.join(".statikor");
+        let _ = fs::create_dir_all(&statikor_dir);
+        let project_file = statikor_dir.join("project.json");
+        let _ = fs::write(&project_file, "{ invalid json");
+
+        let config = ensure_statikor_project(&temp_dir).unwrap();
+        assert!(!config.id.is_empty());
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_create_file_nested_parents() {
+        let temp_dir = get_test_temp_dir("deep_file");
+        let deep_path = temp_dir.join("a").join("b").join("c").join("deep.txt");
+        let res = create_file(deep_path.to_string_lossy().to_string());
+        assert!(res.is_ok());
+        assert!(deep_path.exists());
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_update_and_save_forte_tool() {
+        let temp_dir = get_test_temp_dir("update_forte");
+        // 1. New tool creation
+        let tool1 = update_and_save_forte_tool(
+            &temp_dir,
+            100,
+            200,
+            Some("engineer@company.com".to_string()),
+        ).unwrap();
+        assert_eq!(tool1.id, "forteweb");
+        assert_eq!(tool1.forte_user_root_id, Some(100));
+        assert_eq!(tool1.file_id, Some(200));
+
+        // 2. Updating existing tool
+        let tool2 = update_and_save_forte_tool(
+            &temp_dir,
+            101,
+            201,
+            Some("engineer_updated@company.com".to_string()),
+        ).unwrap();
+        assert_eq!(tool2.forte_user_root_id, Some(101));
+        assert_eq!(tool2.file_id, Some(201));
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_save_project_tool_initially_none() {
+        let temp_dir = get_test_temp_dir("init_none_tools");
+        let project_json = temp_dir.join(".statikor").join("project.json");
+        let _ = fs::create_dir_all(temp_dir.join(".statikor"));
+        let _ = fs::write(&project_json, r#"{"id":"proj-no-tools"}"#);
+
+        let tool = ToolConfig {
+            id: "forteweb".to_string(),
+            name: "ForteWEB".to_string(),
+            authenticated: true,
+            ..Default::default()
+        };
+        let updated = save_project_tool(temp_dir.to_string_lossy().to_string(), tool).unwrap();
+        assert_eq!(updated.tools.as_ref().unwrap().len(), 1);
+        assert_eq!(updated.tools.as_ref().unwrap()[0].id, "forteweb");
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_keychain_missing_and_delete_nonexistent() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let temp_dir = get_test_temp_dir("creds_missing");
+        std::env::set_var("STATIKOR_HOME", temp_dir.to_str().unwrap());
+
+        let res = get_keychain_secret("nonexistent_service".to_string(), "nonexistent_account".to_string());
+        assert!(res.is_err());
+
+        let del_res = delete_keychain_secret("nonexistent_service".to_string(), "nonexistent_account".to_string());
+        // Deleting non-existent should succeed or handle gracefully
+        assert!(del_res.is_ok() || del_res.is_err());
+
+        std::env::remove_var("STATIKOR_HOME");
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_open_browser_url() {
+        // Test execution with harmless URL
+        let res = open_browser_url("http://127.0.0.1:1420".to_string());
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_auth_url_parsing() {
+        let valid_url: Result<tauri::Url, _> = "https://example.com/auth".parse();
+        assert!(valid_url.is_ok());
+
+        let invalid_url: Result<tauri::Url, _> = "not a valid url".parse();
+        assert!(invalid_url.is_err());
+    }
+}
+

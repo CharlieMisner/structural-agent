@@ -16,4 +16,16 @@ export default defineConfig({
     host: true, // Listens on all local addresses (localhost, 127.0.0.1, ::1)
   },
   envPrefix: ['VITE_', 'TAURI_'],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/test/**', 'src/__tests__/**', 'src/main.tsx', 'src/types/**', '**/*.d.ts'],
+    },
+  },
 });
+

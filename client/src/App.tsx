@@ -23,6 +23,68 @@ export const App: React.FC = () => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const dragStartXRef = useRef<number>(0);
   const dragStartWidthRef = useRef<number>(260);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    // -------------------------------------------------------------
+    // Hybrid RPC WebSocket Bridge (Local Client -> Remote Server)
+    // -------------------------------------------------------------
+    const connectRpc = () => {
+      const ws = new WebSocket('ws://127.0.0.1:41420/ws/rpc');
+      
+      ws.onopen = () => {
+        console.log('[RPC] Connected to Cloud Server (Local Sidecar mode)');
+      };
+      
+      ws.onmessage = async (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'execute_tool') {
+            console.log(`[RPC] Cloud requested local tool execution: ${payload.tool}`, payload.args);
+            
+            // --- MOCK LOCAL EXECUTION ---
+            let result = {};
+            if (payload.tool === 'etabs_get_reactions') {
+              result = { P: 245.5, V2: 12.3, V3: -4.2, M2: 0, M3: 145.0 };
+            } else if (payload.tool === 'revit_update_schedule') {
+              result = { status: "success", elements_updated: 14 };
+            } else {
+              result = { error: "Unknown local tool" };
+            }
+            
+            // Simulate local processing delay
+            await new Promise((res) => setTimeout(res, 800));
+            
+            // Send back to cloud
+            ws.send(JSON.stringify({
+              type: "tool_result",
+              id: payload.id,
+              result: result
+            }));
+            console.log(`[RPC] Sent result back for ${payload.tool}`);
+          }
+        } catch (err) {
+          console.error('[RPC] Message error', err);
+        }
+      };
+      
+      ws.onclose = () => {
+        console.log('[RPC] Disconnected, reconnecting in 2s...');
+        setTimeout(connectRpc, 2000);
+      };
+      
+      wsRef.current = ws;
+    };
+    
+    connectRpc();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.onclose = null; // prevent reconnect loop on unmount
+        wsRef.current.close();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const lastProject = localStorage.getItem('statikor_last_project');
