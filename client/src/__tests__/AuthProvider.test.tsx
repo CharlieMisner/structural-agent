@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React from 'react';
 import { render, screen, renderHook, act } from '@testing-library/react';
 
 const mockUseAuth0 = vi.fn();
@@ -318,15 +317,11 @@ describe('AuthProvider & useAuth hook', () => {
       </AuthProvider>
     );
 
-    expect(screen.getByText(/Signed in to Statikor/i)).toBeInTheDocument();
+    expect(screen.getByText(/Authentication Complete/i)).toBeInTheDocument();
     expect(screen.getByText(/charlie@gmail.com/i)).toBeInTheDocument();
-
-    const closeMock = vi.fn();
-    window.close = closeMock;
-
-    const closeTabBtn = screen.getByRole('button', { name: /Close Tab/i });
-    expect(closeTabBtn).toBeInTheDocument();
-    closeTabBtn.click();
-    expect(closeMock).toHaveBeenCalled();
+    expect(screen.getAllByText(/STATIKOR/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/You may now close this tab and return to the Statikor desktop app/i)
+    ).toBeInTheDocument();
   });
 });

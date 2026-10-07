@@ -4,7 +4,7 @@ from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
-from langchain.messages import AIMessage, AnyMessage, SystemMessage, ToolMessage
+from langchain.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 
 from server.config.tools_config import tools, tools_by_name
@@ -33,7 +33,7 @@ system_message = SystemMessage(
 api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "placeholder-key"
 
 model = init_chat_model(
-    "gemini-3.6-flash",
+    "gemma-4-26b-a4b-it",
     model_provider="google_genai",
     api_key=api_key,
     temperature=0
@@ -46,10 +46,13 @@ class MessageState(TypedDict):
     llm_calls: int
 
 def llm_call(state: MessageState):
+    msgs = list(state["messages"])
+    if msgs and isinstance(msgs[0], HumanMessage):
+        msgs[0] = HumanMessage(content=f"{system_message.content}\n\n{msgs[0].content}")
+    else:
+        msgs = [HumanMessage(content=str(system_message.content))] + msgs
     return {
-        "messages": [model_with_tools.invoke(
-            [system_message] + state["messages"]
-        )],
+        "messages": [model_with_tools.invoke(msgs)],
         "llm_calls": state.get("llm_calls", 0) + 1
     }
 

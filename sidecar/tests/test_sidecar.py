@@ -86,3 +86,32 @@ def test_sidecar_auth_session():
     assert resp2.status_code == 200
     assert resp2.json()["status"] == "ok"
     assert resp2.json()["session"]["accessToken"] == "sidecar_tok"
+
+def test_sidecar_auth_relay():
+    # Store via relay
+    client.post("/api/auth/relay", json={"accessToken": "relay_sidecar_tok"})
+    
+    # Retrieve via latest
+    resp = client.get("/api/auth/session/latest")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+    assert resp.json()["session"]["accessToken"] == "relay_sidecar_tok"
+
+def test_sidecar_websocket_rpc():
+    with client.websocket_connect("/ws/rpc") as websocket:
+        websocket.send_text('{"jsonrpc": "2.0", "method": "ping", "id": 1}')
+
+def test_proxy_api_standard_connection_error():
+    with patch("httpx.AsyncClient.send", new_callable=AsyncMock) as mock_send:
+        mock_send.side_effect = httpx.ConnectError("All connection attempts failed")
+        response = client.post("/api/projects", json={"name": "test"})
+        assert response.status_code == 502
+        assert "Unable to reach Statikor Agent Server" in response.json()["error"]
+
+def test_proxy_api_stream_connection_error():
+    with patch("httpx.AsyncClient.send", new_callable=AsyncMock) as mock_send:
+        mock_send.side_effect = httpx.ConnectError("All connection attempts failed")
+        response = client.post("/api/chat/stream", json={"messages": []})
+        assert response.status_code == 200
+        assert b"Unable to reach Statikor Agent Server" in response.content
+

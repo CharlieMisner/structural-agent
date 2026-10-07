@@ -6,6 +6,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { ProjectState } from '../types/fs';
 import { streamChat, AGENT_BASE_URL } from '../services/agentApi';
+import { useAuth } from '../auth/AuthProvider';
 
 export interface ToolCallRecord {
   tool: string;
@@ -85,6 +86,7 @@ const ToolCallCard = ({ tc }: { tc: ToolCallRecord }) => {
 };
 
 export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => {
+  const { getAccessToken } = useAuth();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -138,6 +140,7 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
     setToolStatus(null);
 
     try {
+      const authToken = await getAccessToken();
       await streamChat(
         { prompt: text },
         {
@@ -205,7 +208,8 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
               )
             );
           },
-        }
+        },
+        authToken ? { authToken } : undefined
       );
     } catch (err: unknown) {
       setToolStatus(null);

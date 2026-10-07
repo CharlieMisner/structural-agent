@@ -833,6 +833,7 @@ fn open_browser_url(url: String) -> Result<(), String> {
 // Python Agent Sidecar Management
 // ---------------------------------------------------------------------------
 pub struct SidecarState(pub Mutex<Option<Child>>);
+pub struct ServerState(pub Mutex<Option<Child>>);
 
 fn normalize_path(path: &Path) -> PathBuf {
     use std::path::Component;
@@ -849,17 +850,19 @@ fn normalize_path(path: &Path) -> PathBuf {
     out
 }
 
-fn find_agent_paths() -> Option<(PathBuf, PathBuf)> {
-    // Check environment override first (SERVER_PYTHON_PATH or AGENT_PYTHON_PATH)
-    if let Ok(py_override) = std::env::var("SERVER_PYTHON_PATH").or_else(|_| std::env::var("AGENT_PYTHON_PATH")) {
-        let py_path = PathBuf::from(py_override);
-        if py_path.exists() {
-            let dir_path = py_path
-                .parent()
-                .and_then(|p| p.parent())
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| PathBuf::from("."));
-            return Some((normalize_path(&py_path), normalize_path(&dir_path)));
+fn find_venv_paths(env_keys: &[&str], candidate_dirs: &[&str]) -> Option<(PathBuf, PathBuf)> {
+    for key in env_keys {
+        if let Ok(py_override) = std::env::var(key) {
+            let py_path = PathBuf::from(py_override);
+            if py_path.exists() {
+                let dir_path = py_path
+                    .parent()
+                    .and_then(|p| p.parent())
+                    .map(|p| p.to_path_buf())
+                    .unwrap_or_else(|| PathBuf::from("."));
+                return Some((normalize_path(&py_path), normalize_path(&dir_path)));
+            }
+            return None;
         }
     }
 
@@ -869,15 +872,6 @@ fn find_agent_paths() -> Option<(PathBuf, PathBuf)> {
     let python_subpath = "Scripts/python.exe";
     #[cfg(not(windows))]
     let python_subpath = "bin/python";
-
-    let candidate_dirs = [
-        "server",
-        "../server",
-        "../../server",
-        "agent",
-        "../agent",
-        "../../agent",
-    ];
 
     for dir_rel in candidate_dirs {
         let raw_dir = cwd.join(dir_rel);
@@ -890,6 +884,17 @@ fn find_agent_paths() -> Option<(PathBuf, PathBuf)> {
         }
     }
     None
+}
+
+fn find_sidecar_paths() -> Option<(PathBuf, PathBuf)> {
+    find_venv_paths(&["SIDECAR_PYTHON_PATH"], &["sidecar", "../sidecar", "../../sidecar"])
+}
+
+fn find_agent_paths() -> Option<(PathBuf, PathBuf)> {
+    find_venv_paths(
+        &["SERVER_PYTHON_PATH", "AGENT_PYTHON_PATH"],
+        &["server", "../server", "../../server", "agent", "../agent", "../../agent"],
+    )
 }
 
 fn free_port_if_in_use(port: u16) {
@@ -919,48 +924,114 @@ fn free_port_if_in_use(port: u16) {
     }
 }
 
-fn start_sidecar() -> Result<Child, String> {
-    // Guarantee ports 8000 and 41420 are completely free before spawning
+fn find_standalone_sidecar_binary() -> Option<PathBuf> {
+    if let Ok(bin_override) = std::env::var("SIDECAR_STANDALONE_BIN") {
+        let p = PathBuf::from(bin_override);
+        return if p.exists() { Some(normalize_path(&p)) } else { None };
+    }
+
+    // In debug mode (`tauri dev`), skip the compiled binary by default so live Python source is used
+    if cfg!(debug_assertions) && std::env::var("SIDECAR_CHECK_EXE_DIR").is_err() {
+        return None;
+    }
+
+    #[cfg(windows)]
+    let bin_name = "statikor-sidecar.exe";
+    #[cfg(not(windows))]
+    let bin_name = "statikor-sidecar";
+
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            for rel in [bin_name, &format!("../Resources/{}", bin_name)] {
+                let candidate = exe_dir.join(rel);
+                if candidate.exists() {
+                    return Some(normalize_path(&candidate));
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn spawn_python_module(python_bin: &Path, work_dir: &Path, module_name: &str) -> Result<Child, String> {
+    let mut cmd = Command::new(python_bin);
+    cmd.args(["-m", module_name])
+        .current_dir(work_dir)
+        .env("PYTHONPATH", work_dir.join("src"));
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
+
+    cmd.spawn()
+        .map_err(|e| format!("Failed to spawn Python module {}: {}", module_name, e))
+}
+
+fn start_local_server() -> Option<Child> {
+    let (python_bin, srv_dir) = find_agent_paths()?;
     free_port_if_in_use(8000);
+    let module_name = if srv_dir.join("src").join("server").exists() {
+        "server.server"
+    } else {
+        "agent.server"
+    };
+    eprintln!(
+        "[Statikor Server] Launching local Agent Server: {:?} (module: {}) in {:?}",
+        python_bin, module_name, srv_dir
+    );
+    spawn_python_module(&python_bin, &srv_dir, module_name).ok()
+}
+
+fn start_sidecar() -> Result<Child, String> {
+    // Guarantee port 41420 is completely free before spawning
     free_port_if_in_use(41420);
 
+    // 1. Launch standalone compiled binary (Nuitka bundle in release builds) if present
+    if let Some(standalone_bin) = find_standalone_sidecar_binary() {
+        eprintln!(
+            "[Statikor Sidecar] Launching standalone compiled sidecar: {:?}",
+            standalone_bin
+        );
+        let mut cmd = Command::new(&standalone_bin);
+        if let Some(parent) = standalone_bin.parent() {
+            cmd.current_dir(parent);
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            cmd.process_group(0);
+        }
+        return cmd
+            .spawn()
+            .map_err(|e| format!("Failed to spawn standalone sidecar: {}", e));
+    }
+
+    // 2. Launch local Python sidecar virtualenv
+    if let Some((python_bin, sidecar_dir)) = find_sidecar_paths() {
+        eprintln!(
+            "[Statikor Sidecar] Launching Python sidecar: {:?} in {:?}",
+            python_bin, sidecar_dir
+        );
+        return spawn_python_module(&python_bin, &sidecar_dir, "sidecar.sidecar");
+    }
+
+    // 3. Fallback to server virtualenv if sidecar venv is not present
     if let Some((python_bin, srv_dir)) = find_agent_paths() {
         let module_name = if srv_dir.join("src").join("server").exists() {
             "server.server"
         } else {
             "agent.server"
         };
-        eprintln!(
-            "[Statikor Sidecar] Launching Python daemon: {:?} (module: {}) in {:?}",
-            python_bin, module_name, srv_dir
-        );
-        let mut cmd = Command::new(&python_bin);
-        cmd.args(["-m", module_name])
-            .current_dir(&srv_dir)
-            .env("PYTHONPATH", srv_dir.join("src"));
-
-        #[cfg(unix)]
-        {
-            use std::os::unix::process::CommandExt;
-            cmd.process_group(0);
-        }
-
-        cmd.spawn()
-            .map_err(|e| format!("Failed to spawn Python sidecar: {}", e))
-    } else {
-        eprintln!("[Statikor Sidecar] Sidecar venv not found. Attempting fallback 'python3 -m server.server'...");
-        let mut cmd = Command::new("python3");
-        cmd.args(["-m", "server.server"]);
-
-        #[cfg(unix)]
-        {
-            use std::os::unix::process::CommandExt;
-            cmd.process_group(0);
-        }
-
-        cmd.spawn()
-            .map_err(|e| format!("Failed to spawn fallback python3: {}", e))
+        return spawn_python_module(&python_bin, &srv_dir, module_name);
     }
+
+    let mut cmd = Command::new("python3");
+    cmd.args(["-m", "sidecar.sidecar"]);
+    cmd.spawn()
+        .map_err(|e| format!("Failed to spawn fallback python3: {}", e))
 }
 
 fn get_sidecar_status_inner(child: &mut Option<Child>) -> Result<String, String> {
@@ -989,13 +1060,21 @@ fn main() {
         }
         Err(e) => {
             eprintln!("[Statikor Sidecar] Notice: Sidecar auto-launch skipped or failed: {}", e);
-            eprintln!("[Statikor Sidecar] You can run the server manually: `cd server && uv run start-server`");
+            eprintln!("[Statikor Sidecar] You can run the sidecar manually: `cd sidecar && uv run start-sidecar`");
             None
         }
     };
 
+    // In local development, also auto-start the local Agent Server on port 8000 if available
+    let server_child = if cfg!(debug_assertions) {
+        start_local_server()
+    } else {
+        None
+    };
+
     let app = tauri::Builder::default()
         .manage(SidecarState(Mutex::new(sidecar_child)))
+        .manage(ServerState(Mutex::new(server_child)))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
@@ -1019,16 +1098,27 @@ fn main() {
 
     app.run(|app_handle, event| {
         if let RunEvent::Exit = event {
-            // Clean up: terminate the background Python process when Tauri quits
+            // Clean up: terminate the background Python processes when Tauri quits
             if let Some(state) = app_handle.try_state::<SidecarState>() {
                 if let Ok(mut guard) = state.0.lock() {
                     if let Some(mut child) = guard.take() {
-                        eprintln!("[Statikor Sidecar] Shutting down Python daemon...");
+                        eprintln!("[Statikor Sidecar] Shutting down Python sidecar...");
+                        let _ = child.kill();
+                    }
+                }
+            }
+            if let Some(state) = app_handle.try_state::<ServerState>() {
+                if let Ok(mut guard) = state.0.lock() {
+                    if let Some(mut child) = guard.take() {
+                        eprintln!("[Statikor Server] Shutting down local Agent Server...");
                         let _ = child.kill();
                     }
                 }
             }
             free_port_if_in_use(41420);
+            if cfg!(debug_assertions) {
+                free_port_if_in_use(8000);
+            }
         }
     });
 }
@@ -1594,14 +1684,38 @@ mod tests {
 
     #[test]
     fn test_init_forte_project_file_with_token_curl() {
+        let _lock = ENV_MUTEX.lock().unwrap();
         let temp_dir = get_test_temp_dir("forte_curl_init");
+        std::env::set_var("STATIKOR_HOME", temp_dir.to_str().unwrap());
+
         let res = init_forte_project_file(
             temp_dir.to_string_lossy().to_string(),
             Some("fake_token_123".to_string()),
             None,
         );
-        // Will attempt GetAllFileSystemData and return Err due to fake token / offline response
         assert!(res.is_err());
+
+        // Test resolving token from stored credentials with and without username hint
+        let _ = store_keychain_secret(
+            "com.statikor.forteweb".to_string(),
+            "user@test.com".to_string(),
+            "stored_fake_token".to_string(),
+        );
+        let res2 = init_forte_project_file(
+            temp_dir.to_string_lossy().to_string(),
+            None,
+            Some("user@test.com".to_string()),
+        );
+        assert!(res2.is_err());
+
+        let res3 = init_forte_project_file(
+            temp_dir.to_string_lossy().to_string(),
+            None,
+            None,
+        );
+        assert!(res3.is_err());
+
+        std::env::remove_var("STATIKOR_HOME");
         let _ = fs::remove_dir_all(&temp_dir);
     }
 
@@ -1707,6 +1821,70 @@ mod tests {
 
         let invalid_url: Result<tauri::Url, _> = "not a valid url".parse();
         assert!(invalid_url.is_err());
+    }
+
+    #[test]
+    fn test_find_standalone_sidecar_binary() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let _ = find_standalone_sidecar_binary();
+        std::env::set_var("SIDECAR_CHECK_EXE_DIR", "1");
+        let _ = find_standalone_sidecar_binary();
+        std::env::remove_var("SIDECAR_CHECK_EXE_DIR");
+    }
+
+    #[test]
+    fn test_find_sidecar_paths_and_start_local_server() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let temp_dir = get_test_temp_dir("sidecar_py");
+        let fake_bin = temp_dir.join("bin");
+        let _ = fs::create_dir_all(&fake_bin);
+        let fake_py = fake_bin.join("python");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = fs::write(&fake_py, "#!/bin/sh\nexit 0\n");
+            let _ = fs::set_permissions(&fake_py, fs::Permissions::from_mode(0o755));
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = fs::write(&fake_py, "");
+        }
+
+        // 1. Standalone binary override branch
+        std::env::set_var("SIDECAR_STANDALONE_BIN", fake_py.to_str().unwrap());
+        assert!(find_standalone_sidecar_binary().is_some());
+        if let Ok(mut c) = start_sidecar() {
+            let _ = c.wait();
+        }
+        std::env::remove_var("SIDECAR_STANDALONE_BIN");
+
+        // 2. Sidecar python override branch
+        std::env::set_var("SIDECAR_PYTHON_PATH", fake_py.to_str().unwrap());
+        assert!(find_sidecar_paths().is_some());
+        if let Ok(mut c) = start_sidecar() {
+            let _ = c.wait();
+        }
+
+        // 3. Server python fallback branch when sidecar venv is missing
+        std::env::set_var("SIDECAR_PYTHON_PATH", "/nonexistent_sidecar_py");
+        std::env::set_var("SERVER_PYTHON_PATH", fake_py.to_str().unwrap());
+        if let Ok(mut c) = start_sidecar() {
+            let _ = c.wait();
+        }
+        if let Some(mut srv_child) = start_local_server() {
+            let _ = srv_child.wait();
+        }
+
+        // 4. python3 fallback branch when both venvs are missing
+        std::env::set_var("SERVER_PYTHON_PATH", "/nonexistent_server_py");
+        if let Ok(mut c) = start_sidecar() {
+            let _ = c.kill();
+            let _ = c.wait();
+        }
+
+        std::env::remove_var("SIDECAR_PYTHON_PATH");
+        std::env::remove_var("SERVER_PYTHON_PATH");
+        let _ = fs::remove_dir_all(&temp_dir);
     }
 }
 

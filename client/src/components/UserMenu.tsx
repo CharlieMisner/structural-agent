@@ -64,21 +64,23 @@ export const UserMenu: React.FC = () => {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center space-x-1.5 px-2 py-0.5 rounded hover:bg-[#091728] text-hud-text hover:text-[#00c8e6] transition-colors text-xs font-mono"
+        data-testid="user-menu-btn"
+        aria-label="User Profile"
+        title={user.email || user.name || 'User Profile'}
+        className="flex items-center justify-center p-1 rounded hover:bg-[#091728] transition-colors cursor-pointer"
       >
-        {user.picture ? (
-          <img src={user.picture} alt={user.name || 'User'} className="w-4 h-4 rounded-full" />
-        ) : (
-          <UserIcon className="w-3.5 h-3.5 text-[#00c8e6]" />
-        )}
-        <span className="max-w-[120px] truncate">{user.name || user.email || 'Account'}</span>
+        <div className="w-5 h-5 rounded-full bg-[#00e5a3]/10 border border-[#00e5a3]/40 flex items-center justify-center hover:border-[#00e5a3] transition-colors">
+          <UserIcon className="w-3.5 h-3.5 text-[#00e5a3]" />
+        </div>
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-56 bg-[#071322] border border-[#0e2236] rounded shadow-2xl py-1 text-hud-text z-50 text-xs font-mono">
+        <div className="absolute right-0 top-full mt-1.5 w-56 bg-[#071322] border border-[#0e2236] rounded shadow-2xl py-1 text-hud-text z-50 text-xs font-mono">
           <div className="px-3 py-2 border-b border-[#0e2236]">
-            <p className="font-semibold text-[#00c8e6] truncate">{user.name || 'Structural Engineer'}</p>
-            {user.email && <p className="text-[10px] text-[#44596d] truncate">{user.email}</p>}
+            {user.email && <p className="font-semibold text-[#ccd8e4] truncate">{user.email}</p>}
+            {user.name && user.name !== user.email && (
+              <p className="text-[10px] text-[#7e9bb4] truncate mt-0.5">{user.name}</p>
+            )}
           </div>
 
           <button

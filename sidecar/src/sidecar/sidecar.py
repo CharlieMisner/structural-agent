@@ -5,13 +5,14 @@ Proxies LLM and cloud operations to the remote Statikor Agent Server, while
 reserving local endpoints for CAD/BIM automation (Revit, ETABS, AutoCAD).
 """
 
+import json
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import httpx
 import uvicorn
 
@@ -65,23 +66,40 @@ async def health_check():
 # Local in-memory store for pending desktop OAuth sessions
 _auth_sessions: dict[str, dict] = {}
 
+@app.post("/api/auth/relay")
 @app.post("/api/auth/session/{state_id}")
-async def store_auth_session(state_id: str, request: Request):
+async def store_auth_session(request: Request, state_id: str = "latest"):
     """Store tokens submitted by browser after Auth0 Google login redirect."""
     try:
         data = await request.json()
     except Exception:
         data = {}
     _auth_sessions[state_id] = data
+    _auth_sessions["latest"] = data
     return {"status": "ok", "state_id": state_id}
 
 @app.get("/api/auth/session/{state_id}")
-async def get_auth_session(state_id: str):
+async def get_auth_session(state_id: str = "latest"):
     """Retrieve pending tokens for the given state_id (called by Tauri app)."""
     if state_id in _auth_sessions:
         data = _auth_sessions.pop(state_id)
         return {"status": "ok", "session": data}
     return {"status": "pending"}
+
+# Active local WebSocket RPC connections
+_active_ws_clients: list[WebSocket] = []
+
+@app.websocket("/ws/rpc")
+async def websocket_rpc_endpoint(websocket: WebSocket):
+    """Accept WebSocket RPC connections from the local Tauri desktop client."""
+    await websocket.accept()
+    _active_ws_clients.append(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        if websocket in _active_ws_clients:
+            _active_ws_clients.remove(websocket)
 
 # --- PROXY TO CLOUD AGENT ---
 @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
@@ -105,28 +123,42 @@ async def proxy_api(request: Request, path: str):
     # For Server-Sent Events (SSE) like the chat stream
     if request.url.path.endswith("/stream"):
         async def stream_response():
-            response = await client.send(req, stream=True)
-            async for chunk in response.aiter_bytes():
-                yield chunk
-            await response.aclose()
-            await client.aclose()
+            try:
+                response = await client.send(req, stream=True)
+                async for chunk in response.aiter_bytes():
+                    yield chunk
+                await response.aclose()
+            except Exception as exc:
+                err_payload = json.dumps({
+                    "type": "error",
+                    "error": f"Unable to reach Statikor Agent Server at {REMOTE_SERVER_URL}: {exc}"
+                })
+                yield f"data: {err_payload}\n\n".encode("utf-8")
+            finally:
+                await client.aclose()
         return StreamingResponse(stream_response(), media_type="text/event-stream")
     else:
         # Standard API Proxy
-        response = await client.send(req)
-        await client.aclose()
-        return StreamingResponse(
-            response.aiter_bytes(),
-            status_code=response.status_code,
-            headers=dict(response.headers)
-        )
+        try:
+            response = await client.send(req)
+            await client.aclose()
+            return StreamingResponse(
+                response.aiter_bytes(),
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+        except Exception as exc:
+            await client.aclose()
+            return JSONResponse(
+                status_code=502,
+                content={"error": f"Unable to reach Statikor Agent Server at {REMOTE_SERVER_URL}: {exc}"}
+            )
 
 def start():
     uvicorn.run(
-        "sidecar.sidecar:app",
+        app,
         host="127.0.0.1",
         port=41420,
-        reload=True,
         log_level="info",
     )
 

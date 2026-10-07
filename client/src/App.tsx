@@ -7,8 +7,10 @@ import { PromptWorkspace } from './components/PromptWorkspace';
 import { FileEntry, ProjectConfig, ProjectState, ToolConfig } from './types/fs';
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
+import { useAuth } from './auth/AuthProvider';
 
 export const App: React.FC = () => {
+  const { getAccessToken } = useAuth();
   const [project, setProject] = useState<ProjectState>({
     rootPath: null,
     projectId: null,
@@ -144,9 +146,12 @@ export const App: React.FC = () => {
 
     try {
       // Ensure Python backend initializes .statikor/project.json as well
+      const token = await getAccessToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       fetch('http://127.0.0.1:41420/api/project/init', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ path: folderPath }),
       }).catch(() => null);
 

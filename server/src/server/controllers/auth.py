@@ -18,8 +18,9 @@ def clean_expired_sessions():
         _auth_sessions.pop(k, None)
 
 
+@router.post("/relay")
 @router.post("/session/{state_id}")
-async def store_auth_session(state_id: str, request: Request):
+async def store_auth_session(request: Request, state_id: str = "latest"):
     """Store tokens submitted by the browser after Auth0 redirect."""
     clean_expired_sessions()
     try:
@@ -29,6 +30,7 @@ async def store_auth_session(state_id: str, request: Request):
 
     data["created_at"] = time.time()
     _auth_sessions[state_id] = data
+    _auth_sessions["latest"] = data
     return {"status": "ok", "state_id": state_id}
 
 

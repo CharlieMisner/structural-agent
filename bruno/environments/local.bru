@@ -1,6 +1,6 @@
 vars {
   baseUrl: http://127.0.0.1:41420
-  sessionId: 2d963ee3-88db-4b24-a3b3-89993229c0b2
+  sessionId: ad3bed1e-d1b9-43fc-8819-03e1c2efe5fa
   @object
   postResponseData: '''
     {
@@ -441,7 +441,7 @@ vars {
                 "StructuralSystemStringTag": "floor",
                 "Notes": "Test",
                 "IsDesignable": true,
-                "ProblemIsDesigned": false,
+                "ProblemIsDesigned": true,
                 "HasValidPaeSolution": true,
                 "WaitingOnDesignOfLinkedMember": false,
                 "MemberPitch": 0,
@@ -471,9 +471,9 @@ vars {
                 "MaterialQuantity": 1,
                 "MemberLength": 353.75,
                 "ProductLabel": "1 piece(s) 2 x 10 DF No.1 @ 16\" OC  ",
-                "ErrorString": "",
-                "DesignResult": "ND",
-                "UtilizationPercent": "468%",
+                "ErrorString": "Support 2 failed reaction check due to insufficient bearing capacity.",
+                "DesignResult": "failed",
+                "UtilizationPercent": "812%",
                 "UtilizationCode": "drtLiveLoadDeflection"
               },
               {
@@ -1258,10 +1258,10 @@ vars {
             "ProductLabel": "1 3/4\" x 16\" 1.55E TimberStrand® LSL",
             "ProductSelectionDepthDisplay": "16.00000",
             "ProductID": 9552,
-            "TjProRating": "49",
-            "Rating": "2.26",
-            "RatingAsSingle": 2.26041675,
-            "Spacing": 19.2,
+            "TjProRating": "44",
+            "Rating": "3.62",
+            "RatingAsSingle": 3.61666679,
+            "Spacing": 12,
             "Accessories": "",
             "ProductPasses": true,
             "IsSelected": false,
@@ -1282,7 +1282,7 @@ vars {
             "Rating": "x",
             "RatingAsSingle": 1.47425,
             "Spacing": 16,
-            "Accessories": "",
+            "Accessories": "PB1",
             "ProductPasses": false,
             "IsSelected": true,
             "IsSuggested": false,
@@ -1523,15 +1523,456 @@ vars {
         "PreviousConnectors": null
       },
       "ReportOutputHorizontalData": {
-        "HorizontalMemberReportData": null,
-        "PostDesignGraphicData": null
+        "HorizontalMemberReportData": {
+          "ReportTime": null,
+          "OperatorNotes": "Charlie D Misner\r\nNapior\r\n(425) 445-0569\r\ncharliemisner@gmail.com",
+          "JobNotes": "",
+          "AppVersion": "ForteWEB v4.1",
+          "EngineVersion": "V8.5.1.3",
+          "DataVersion": "V26.12.18.51",
+          "DateTime": "10/7/2026 12:24:32 AM",
+          "SoftwareOperatorName": "ForteWEB Software Operator",
+          "MiscellaneousData": [
+            {
+              "ProductIsSCL": true,
+              "FileName": "Statikor Dev Project",
+              "LevelAndMemberName": "Level, FooBar",
+              "MemberGraphic": "",
+              "MemberGraphicText": null,
+              "ProductName": "1 piece(s) 2 x 10 DF No.1 @ 16\" OC  ",
+              "DesignPassed": false,
+              "PassFailText": "failed",
+              "StructuralSystem": "System : Floor",
+              "MemberType": "Member Type : Joist",
+              "BuildingClass": "Building Use : Residential",
+              "BuildingCode": "Building Code : IBC 2015",
+              "BuildingCodeIsNbcc": false,
+              "ProvincialCode": "",
+              "DesignMethodology": "Design Methodology : ASD",
+              "ConnectorManufacturer": "Simpson Strong-Tie",
+              "MemberNotes": "Test",
+              "MemberPitch": null,
+              "MemberCutLength": null,
+              "RoofPitch": null,
+              "LoadCombinationPatternGroupHeader": "report_designresults_loadCombinationHeader",
+              "SupportsBearingLengthCLLHeader": "bearingLength",
+              "SupportLoadsToSupportsCLLHeader": "supportReactionsLBS",
+              "ConnectorCLLHeader": "",
+              "MemberTypeValue": 1,
+              "ProductIsSteel": false,
+              "ProductIsTJI": false
+            }
+          ],
+          "MemberInformation": {
+            "StructuralSystem": "floor",
+            "MemberType": "joist",
+            "BuildingClass": "residential",
+            "BuildingCode": "ibc2015",
+            "ProvincialCode": "",
+            "DesignMethodology": "asd",
+            "MemberPitch": "",
+            "MemberCutLength": "29' 5 3/4\"",
+            "MemberPassFailText": "failed"
+          },
+          "ErrorMessages": [
+            {
+              "Message": "Support 2 failed reaction check due to insufficient bearing capacity."
+            }
+          ],
+          "DesignMessages": [
+            {
+              "Message": "Deflection criteria: LL (L/480) and TL (L/240)."
+            },
+            {
+              "Message": "Overhang deflection criteria: LL (2L/480) and TL (2L/~"
+            },
+            {
+              "Message": "Allowed moment does not reflect the adjustment for the beam stability factor."
+            },
+            {
+              "Message": "A 15% increase in the moment capacity has been added to account for repetitive member usage."
+            },
+            {
+              "Message": "Allowed moment has been multiplied by 1.10 for the volume/size factor."
+            },
+            {
+              "Message": "Upward deflection on left cantilever exceeds 0.4\"."
+            },
+            {
+              "Message": "Upward deflection on left cantilever exceeds overhang deflection criteria."
+            },
+            {
+              "Message": "Applicable calculations are based on NDS."
+            },
+            {
+              "Message": "No composite action between deck and joist was considered in analysis."
+            },
+            {
+              "Message": "Permanent bracing at third points in the back span or a direct applied ceiling over the entire back span length is required at the left span of the member. See literature detail (PB1) For clarification."
+            }
+          ],
+          "DesignMessageComponents": [
+            {
+              "MessageKey": "DeflectionCriteriaLLTL",
+              "MessageParameters": [
+                "480",
+                "240"
+              ]
+            },
+            {
+              "MessageKey": "DeflectionControlMessageForCantilevers",
+              "MessageParameters": [
+                "480",
+                "240"
+              ]
+            },
+            {
+              "MessageKey": "excessiveUpwardDeflectionLeftCantileverOverhangPAE",
+              "MessageParameters": []
+            },
+            {
+              "MessageKey": "momentAdjustmentMessage",
+              "MessageParameters": []
+            },
+            {
+              "MessageKey": "momentCapacityIncreasePAE",
+              "MessageParameters": [
+                "15"
+              ]
+            },
+            {
+              "MessageKey": "momentVolumeSize",
+              "MessageParameters": [
+                "1.10"
+              ]
+            },
+            {
+              "MessageKey": "excessiveUpwardDeflectionLeftCantileverPAE",
+              "MessageParameters": [
+                "0.4\""
+              ]
+            },
+            {
+              "MessageKey": "reportMSG_BasedOnNDS",
+              "MessageParameters": []
+            },
+            {
+              "MessageKey": "noDeckAndJoistCompositeAction",
+              "MessageParameters": []
+            },
+            {
+              "MessageKey": "report_designresultnotes_backspanbracing",
+              "MessageParameters": [
+                "cantileverLeft"
+              ]
+            }
+          ],
+          "HeaderMessageComponents": [
+            {
+              "MessageKey": "insufficientSupportBearingCapacityPAE",
+              "MessageParameters": [
+                "2"
+              ]
+            }
+          ],
+          "SupportMessages": [
+            {
+              "MessageKey": "report_supportnotes_rimboard",
+              "MessageParameters": []
+            },
+            {
+              "MessageKey": "report_supportnotes_blockingpanels",
+              "MessageParameters": []
+            }
+          ],
+          "EdgeBracingMessages": [
+            {
+              "MessageKey": "edgeBracingReportMessage",
+              "MessageParameters": []
+            }
+          ],
+          "LoadsMessages": [],
+          "LoadsMessagesComponents": [],
+          "NotchedFlangeMessages": [],
+          "LocationAnalysisMessages": [],
+          "HolesMessages": [],
+          "HolesMessagesComponents": [],
+          "DesignResults": [
+            {
+              "Passes": false,
+              "Name": "memberReactionLBS",
+              "ActualAndLocation": "1490 @ 29' 4 1/2\"",
+              "Allowed": "1434 (2.25\")",
+              "Result": {
+                "MessageKey": "report_designresults_result_failed",
+                "MessageParameters": [
+                  "104%"
+                ]
+              },
+              "LDF": "--",
+              "LoadCombinationLoadPattern": {
+                "MessageKey": "report_designresults_altSpans",
+                "MessageParameters": [
+                  "1.0 D + 1.0 L"
+                ]
+              },
+              "LoadCombinationID": 0,
+              "LoadPatternID": 0,
+              "LoadGroupID": 0,
+              "LoadPatternLabel": null
+            },
+            {
+              "Passes": true,
+              "Name": "shearLBS",
+              "ActualAndLocation": "1441 @ 6' 3/4\"",
+              "Allowed": "1665",
+              "Result": {
+                "MessageKey": "report_designresults_result_passed",
+                "MessageParameters": [
+                  "87%"
+                ]
+              },
+              "LDF": "1.00",
+              "LoadCombinationLoadPattern": {
+                "MessageKey": "report_designresults_allSpans",
+                "MessageParameters": [
+                  "1.0 D + 1.0 L"
+                ]
+              },
+              "LoadCombinationID": 663023,
+              "LoadPatternID": 96015,
+              "LoadGroupID": 0,
+              "LoadPatternLabel": "Loading On All Spans"
+            },
+            {
+              "Passes": false,
+              "Name": "momentFTLBS",
+              "ActualAndLocation": "8896 @ 17' 4\"",
+              "Allowed": "2255",
+              "Result": {
+                "MessageKey": "report_designresults_result_failed",
+                "MessageParameters": [
+                  "395%"
+                ]
+              },
+              "LDF": "1.00",
+              "LoadCombinationLoadPattern": {
+                "MessageKey": "report_designresults_altSpans",
+                "MessageParameters": [
+                  "1.0 D + 1.0 L"
+                ]
+              },
+              "LoadCombinationID": 663023,
+              "LoadPatternID": 96017,
+              "LoadGroupID": 0,
+              "LoadPatternLabel": "ALTERNATE span loading on even # spans"
+            },
+            {
+              "Passes": false,
+              "Name": "liveLoadDeflIN",
+              "ActualAndLocation": "4.918 @ 17' 3 1/8\"",
+              "Allowed": "0.606",
+              "Result": {
+                "MessageKey": "report_designresults_result_failed",
+                "MessageParameters": [
+                  "L/59"
+                ]
+              },
+              "LDF": "--",
+              "LoadCombinationLoadPattern": {
+                "MessageKey": "report_designresults_altSpans",
+                "MessageParameters": [
+                  "1.0 D + 1.0 L"
+                ]
+              },
+              "LoadCombinationID": 0,
+              "LoadPatternID": 0,
+              "LoadGroupID": 0,
+              "LoadPatternLabel": null
+            },
+            {
+              "Passes": false,
+              "Name": "totalLoadDeflIN",
+              "ActualAndLocation": "5.576 @ 17' 3 7/16\"",
+              "Allowed": "1.211",
+              "Result": {
+                "MessageKey": "report_designresults_result_failed",
+                "MessageParameters": [
+                  "L/52"
+                ]
+              },
+              "LDF": "--",
+              "LoadCombinationLoadPattern": {
+                "MessageKey": "report_designresults_altSpans",
+                "MessageParameters": [
+                  "1.0 D + 1.0 L"
+                ]
+              },
+              "LoadCombinationID": 663023,
+              "LoadPatternID": 96017,
+              "LoadGroupID": 0,
+              "LoadPatternLabel": "ALTERNATE span loading on even # spans"
+            },
+            {
+              "Passes": true,
+              "Name": "TJProRatingText",
+              "ActualAndLocation": "na",
+              "Allowed": "na",
+              "Result": {
+                "MessageKey": "na",
+                "MessageParameters": []
+              },
+              "LDF": "--",
+              "LoadCombinationLoadPattern": {
+                "MessageKey": "",
+                "MessageParameters": [
+                  "na"
+                ]
+              },
+              "LoadCombinationID": 0,
+              "LoadPatternID": 0,
+              "LoadGroupID": 0,
+              "LoadPatternLabel": null
+            }
+          ],
+          "Supports": [
+            {
+              "Name": "studWall - SPF",
+              "TotalBearing": "3.50\"",
+              "AvailableBearing": "3.50\"",
+              "RequiredBearing": "3.43\"",
+              "ReactionDead": "285",
+              "ReactionFloor": "1899",
+              "ReactionRoof": "--",
+              "ReactionSnow": "--",
+              "ReactionWind": "--",
+              "ReactionSeismic": "--",
+              "TotalLoadsToSupports": "2184",
+              "Accessories": "blocking",
+              "SupportReactions": "2184",
+              "ReactionCritical": "NOT DONE YET",
+              "ConstructionDetails": []
+            },
+            {
+              "Name": "studWall - SPF",
+              "TotalBearing": "3.50\"",
+              "AvailableBearing": "2.25\"",
+              "RequiredBearing": "2.34\"",
+              "ReactionDead": "188",
+              "ReactionFloor": "1314/-47",
+              "ReactionRoof": "--",
+              "ReactionSnow": "--",
+              "ReactionWind": "--",
+              "ReactionSeismic": "--",
+              "TotalLoadsToSupports": "1503",
+              "Accessories": "oneOneFourthRimBoard",
+              "SupportReactions": "1502/-47",
+              "ReactionCritical": "NOT DONE YET",
+              "ConstructionDetails": []
+            }
+          ],
+          "EdgeBracing": [
+            {
+              "BracingType": 0,
+              "DisplayLengthValue": true,
+              "MaxUnbracedLength": "6\" o/c",
+              "Comments": ""
+            },
+            {
+              "BracingType": 0,
+              "DisplayLengthValue": true,
+              "MaxUnbracedLength": "7' 7\" o/c",
+              "Comments": ""
+            }
+          ],
+          "Connectors": [],
+          "Loads": [
+            {
+              "Name": "uniformPSF",
+              "Location": "0 to 29' 7\"",
+              "TribWidth": "16\"",
+              "Dead": "12",
+              "FloorLive": "80",
+              "RoofLive": "--",
+              "Snow": "--",
+              "Wind": "--",
+              "Seismic": "--",
+              "Combine": "na",
+              "Details": null,
+              "ConstructionDetails": [],
+              "Comments": "Default Load"
+            }
+          ],
+          "Holes": [],
+          "LocationAnalysis": [],
+          "TaperedEndCuts": [],
+          "NotchedFlange": [],
+          "MpceDetailed": [],
+          "MpceFastenerInfo": [],
+          "MpceMessages": [],
+          "VerticalSupports": [],
+          "VerticalSupportsDesignWarnings": [],
+          "LateralLoads": [],
+          "LateralLoadsMessagesComponents": [],
+          "SupportReactionColumnVisibility": [
+            {
+              "FloorLiveVisible": true,
+              "RoofLiveVisible": false,
+              "SnowVisible": false,
+              "WindVisible": false,
+              "SeismicVisible": false,
+              "CombineVisible": false,
+              "DetailsVisible": false
+            }
+          ],
+          "LoadColumnVisibility": {
+            "FloorLiveVisible": true,
+            "RoofLiveVisible": false,
+            "SnowVisible": false,
+            "WindVisible": false,
+            "SeismicVisible": false,
+            "CombineVisible": false,
+            "DetailsVisible": false
+          },
+          "LDFDead": "0.90",
+          "LDFFloorLive": "1.00",
+          "LDFRoofLive": "1.25",
+          "LDFSnow": "1.15",
+          "LDFWind": "1.60",
+          "LDFSeismic": "1.60",
+          "ConnectorTableData": [],
+          "ConnectorMessages": []
+        },
+        "PostDesignGraphicData": {
+          "IsDesignedProductRectangular": true,
+          "IsDesignedProductSteel": false,
+          "WebStiffeners": [],
+          "SquashBlocks": [],
+          "EdgeBracingGraphicData": null,
+          "LeftCantileverBackspanBracing": true,
+          "LeftCantileverType": 0,
+          "RightCantileverBackspanBracing": false,
+          "RightCantileverType": 0,
+          "SupportData": [
+            {
+              "hasWebStiffiner": false,
+              "csDetailRequired": false
+            },
+            {
+              "hasWebStiffiner": false,
+              "csDetailRequired": false
+            }
+          ],
+          "SelectedProductIsValidForHoles": false,
+          "HolesData": []
+        }
       },
       "ReportOutputVerticalData": null,
       "GraphicOutputData": {
-        "imageDataURL": "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",
+        "imageDataURL": "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",
         "LeftCantileverType": 0,
         "RightCantileverType": 0,
-        "LeftCantileverBackspanBracing": false,
+        "LeftCantileverBackspanBracing": true,
         "RightCantileverBackspanBracing": false,
         "WebStiffiners": [],
         "SquashBlocks": [],

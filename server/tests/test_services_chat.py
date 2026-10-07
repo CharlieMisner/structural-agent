@@ -62,3 +62,17 @@ async def test_stream_chat():
         assert chunks[2]["type"] == "tool_end"
         assert chunks[2]["tool"] == "max_moment_ss_beam"
         assert chunks[3]["type"] == "done"
+
+
+@pytest.mark.asyncio
+async def test_stream_chat_error():
+    async def broken_astream_events(*args, **kwargs):
+        raise RuntimeError("500 INTERNAL")
+        yield  # pragma: no cover
+
+    with patch("server.services.chat.graph.astream_events", side_effect=broken_astream_events):
+        req = ChatRequest(prompt="calculate")
+        chunks = [json.loads(c["data"]) async for c in stream_chat(req)]
+        assert chunks[0]["type"] == "error"
+        assert "500 INTERNAL" in chunks[0]["error"]
+        assert chunks[1]["type"] == "done"

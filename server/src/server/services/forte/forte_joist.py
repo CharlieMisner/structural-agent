@@ -75,33 +75,58 @@ def _save_file(token: str, prd: dict) -> None:
     _make_request(f"{API_BASE_URL}/FileSystem/SaveFile", token, FortePayload(postResponseData=FortePostResponseData(**prd)).model_dump(exclude_none=True))
     return None
 
-def _extract_solution_summary(prd: dict) -> dict[str, Any]:
+def _get_solutions_data(token: str, prd: dict) -> dict:
+    payload = FortePayload(postResponseData=FortePostResponseData(**prd)).model_dump(exclude_none=True)
+    payload["value"] = True
+    return _make_request(f"{API_BASE_URL}/Solutions/GetSolutionsData", token, payload)
+
+def _extract_solution_summary(solutions_data: dict) -> dict[str, Any]:
+    selected_solution = None
     selected_product = None
     product_passes = False
     member_id = None
-    
+    design_results = []
+
+    prd = solutions_data.get(POST_RESPONSE_DATA_KEY) or solutions_data
+
+    member_report = solutions_data.get("memberReport")
+    if isinstance(member_report, dict) and "DesignResults" in member_report:
+        design_results = member_report.get("DesignResults") or []
+
     try:
         parsed = FortePostResponseData(**prd)
-        
+
         containers = parsed.ApplicationData.MemberManagerData.MemberContainers
         if containers and containers[0].Members:
             member_id = containers[0].Members[-1].MemberID
-            
+
         if parsed.MemberData and parsed.MemberData.SolutionsData:
             solutions = parsed.MemberData.SolutionsData.SolutionList
             for sol in solutions:
                 if sol.IsSelected:
+                    selected_solution = sol.model_dump()
                     selected_product = sol.ProductLabel
                     product_passes = sol.ProductPasses
                     break
+
+        if not design_results and isinstance(prd, dict):
+            design_results = (
+                prd.get("MemberData", {})
+                .get("ReportOutputHorizontalData", {})
+                .get("HorizontalMemberReportData", {})
+                .get("DesignResults")
+                or []
+            )
     except Exception as e:
         print(f"Error parsing final PRD: {e}")
-        
+
     return {
         "status": "success",
         "member_id": member_id,
         "selected_product": selected_product,
-        "product_passes": product_passes
+        "product_passes": product_passes,
+        "selected_solution": selected_solution,
+        "DesignResults": design_results,
     }
 
 def add_forte_floor_joist_to_project(token: str | None = None, file_tree_item_id: int | None = None, member_name: str | None = None, span: float | None = None) -> dict[str, Any]:
@@ -113,6 +138,8 @@ def add_forte_floor_joist_to_project(token: str | None = None, file_tree_item_id
     3. AddFloorJoist
     4. SelectedJobTreeNodeChanged
     5. SaveFile
+    6. (Optional) ModifyMemberName / ModifyInteriorSpan + SaveFile
+    7. GetSolutionsData
     """
     token = token or _get_forte_token()
     file_tree_item_id = file_tree_item_id or _get_project_file_id()
@@ -139,8 +166,9 @@ def add_forte_floor_joist_to_project(token: str | None = None, file_tree_item_id
                 prd = _modify_interior_span(token, prd, span, 0)
                 
             _save_file(token, prd)
-            
+
+        solutions_data = _get_solutions_data(token, prd)
     except RuntimeError as e:
         return {"status": "error", "message": str(e)}
         
-    return _extract_solution_summary(prd)
+    return _extract_solution_summary(solutions_data)

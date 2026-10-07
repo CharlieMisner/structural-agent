@@ -87,11 +87,13 @@ describe('UserMenu component', () => {
     });
 
     render(<UserMenu />);
-    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+    const profileBtn = screen.getByTestId('user-menu-btn');
+    expect(profileBtn).toBeInTheDocument();
 
     // Open dropdown
-    fireEvent.click(screen.getByText('Jane Doe'));
+    fireEvent.click(profileBtn);
     expect(screen.getByText('jane@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
     expect(screen.getByText('Sign Out')).toBeInTheDocument();
 
     // Click Sign Out
@@ -120,7 +122,8 @@ describe('UserMenu component', () => {
       </div>
     );
 
-    fireEvent.click(screen.getByText('John Doe'));
+    const profileBtn = screen.getByTestId('user-menu-btn');
+    fireEvent.click(profileBtn);
     expect(screen.getByText('john@example.com')).toBeInTheDocument();
 
     fireEvent.mouseDown(screen.getByTestId('outside'));

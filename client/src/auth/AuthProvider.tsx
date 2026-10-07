@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useMemo, useEffect, useState } from 'react';
 import { Auth0Provider, useAuth0 } from '@auth0/auth0-react';
 import { isTauri, invoke } from '@tauri-apps/api/core';
+import { CheckCircle2 } from 'lucide-react';
+import statikorLogo from '../assets/logo.png';
 
 export interface AuthContextType {
   isAuthenticated: boolean;
@@ -86,6 +88,44 @@ export function parseAuthUrlParams(urlStr: string): { [key: string]: string } {
   }
   return params;
 }
+
+interface BrowserAuthSuccessProps {
+  email: string;
+}
+
+export const BrowserAuthSuccess: React.FC<BrowserAuthSuccessProps> = ({ email }) => {
+  return (
+    <div className="min-h-screen bg-[#03070d] flex items-center justify-center p-6 text-hud-text font-mono select-none">
+      <div className="bg-[#050d18] border border-[#0e2236] rounded-xl p-8 max-w-md w-full text-center">
+        {/* Brand Header */}
+        <div className="flex items-center justify-center space-x-2.5 mb-6">
+          <img src={statikorLogo} alt="Statikor Logo" className="w-7 h-7 object-contain" />
+          <span className="text-sm font-bold tracking-widest text-[#ccd8e4] uppercase">
+            STATIKOR
+          </span>
+        </div>
+
+        {/* Success Icon */}
+        <div className="w-12 h-12 bg-[#00f0ff]/10 border border-[#00f0ff]/20 text-[#00f0ff] rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-6 h-6 text-[#00f0ff]" />
+        </div>
+
+        <h1 className="text-base font-bold text-white mb-2 uppercase tracking-wide">
+          Authentication Complete
+        </h1>
+        
+        <p className="text-xs text-[#7e9bb4] mb-4 leading-relaxed font-sans">
+          Signed in as <span className="text-[#00f0ff] font-semibold font-mono">{email}</span>.
+        </p>
+
+        {/* Informational Return Prompt */}
+        <div className="bg-[#071322] border border-[#0e2236] rounded p-4 text-xs text-[#ccd8e4] leading-relaxed font-sans mb-2">
+          You may now close this tab and return to the Statikor desktop app.
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface Auth0BridgeProps {
   children: React.ReactNode;
@@ -246,17 +286,6 @@ const Auth0Bridge: React.FC<Auth0BridgeProps> = ({ children, authError, onClearA
               localStorage.setItem('statikor_desktop_auth', JSON.stringify(session));
             } catch {}
 
-            if (isTauri()) {
-              try {
-                import('@tauri-apps/api/window')
-                  .then(({ getCurrentWindow }) => {
-                    const win = getCurrentWindow();
-                    win.setFocus().catch(() => {});
-                    win.unminimize().catch(() => {});
-                  })
-                  .catch(() => {});
-              } catch {}
-            }
             return true;
           }
         }
@@ -396,28 +425,8 @@ const Auth0Bridge: React.FC<Auth0BridgeProps> = ({ children, authError, onClearA
     ]
   );
 
-  if (browserHandoffEmail) {
-    return (
-      <div className="min-h-screen bg-[#121212] flex items-center justify-center text-white font-sans p-6 select-none">
-        <div className="bg-[#1e1e1e] border border-[#333333] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-          <div className="w-16 h-16 bg-[#00ffaa]/15 text-[#00ffaa] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#00ffaa]/30">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold mb-2 text-white">Signed in to Statikor</h1>
-          <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-            Authenticated as <span className="text-[#00ffaa] font-medium">{browserHandoffEmail}</span>. You can safely close this tab and return to the Statikor app.
-          </p>
-          <button
-            onClick={() => window.close()}
-            className="w-full bg-[#00ffaa] hover:bg-[#00e699] text-black font-semibold py-2.5 px-4 rounded-xl transition cursor-pointer"
-          >
-            Close Tab
-          </button>
-        </div>
-      </div>
-    );
+  if (browserHandoffEmail && !isTauri()) {
+    return <BrowserAuthSuccess email={browserHandoffEmail} />;
   }
 
   return (

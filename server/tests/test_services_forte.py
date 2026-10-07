@@ -22,6 +22,7 @@ from server.services.forte.forte_joist import (
     _modify_member_name,
     _modify_interior_span,
     _save_file,
+    _get_solutions_data,
     _extract_solution_summary,
     add_forte_floor_joist_to_project,
 )
@@ -247,15 +248,45 @@ def sample_prd():
                 }],
                 "DesignResultsProductLabel": "TJI 110",
                 "DesignResultsProductPasses": True,
-            }
+            },
+            "ReportOutputHorizontalData": {
+                "HorizontalMemberReportData": {
+                    "DesignResults": [
+                        {
+                            "Passes": True,
+                            "Name": "momentFTLBS",
+                            "ActualAndLocation": "1200 @ 5'",
+                            "Allowed": "2255",
+                        }
+                    ]
+                }
+            },
         }
+    }
+
+
+def sample_solutions_response():
+    prd = sample_prd()
+    return {
+        "memberReport": {
+            "DesignResults": [
+                {
+                    "Passes": True,
+                    "Name": "shearLBS",
+                    "ActualAndLocation": "500 @ 1'",
+                    "Allowed": "1665",
+                }
+            ]
+        },
+        "postResponseData": prd,
     }
 
 
 def test_forte_joist_steps():
     prd = sample_prd()
+    sol_resp = sample_solutions_response()
 
-    with patch("server.services.forte.forte_joist._make_request", return_value={"postResponseData": prd}):
+    with patch("server.services.forte.forte_joist._make_request", return_value=sol_resp):
         # Open file
         res = _open_file("tok", 100, "sess")
         assert "postResponseData" in res
@@ -283,6 +314,10 @@ def test_forte_joist_steps():
         # Save file
         _save_file("tok", prd)
 
+        # Get solutions data
+        res_sols = _get_solutions_data("tok", prd)
+        assert "memberReport" in res_sols
+
 
 def test_open_file_locked_self():
     with patch(
@@ -295,21 +330,35 @@ def test_open_file_locked_self():
 
 
 def test_extract_solution_summary():
-    prd = sample_prd()
-    summary = _extract_solution_summary(prd)
+    sol_resp = sample_solutions_response()
+    summary = _extract_solution_summary(sol_resp)
     assert summary["status"] == "success"
     assert summary["member_id"] == 10
     assert summary["selected_product"] == "TJI 110"
     assert summary["product_passes"] is True
+    assert summary["selected_solution"]["ProductLabel"] == "TJI 110"
+    assert summary["selected_solution"]["IsSelected"] is True
+    assert len(summary["DesignResults"]) == 1
+    assert summary["DesignResults"][0]["Name"] == "shearLBS"
+
+    # Fallback to ReportOutputHorizontalData when memberReport is absent
+    prd = sample_prd()
+    summary_prd = _extract_solution_summary(prd)
+    assert summary_prd["selected_solution"]["ProductLabel"] == "TJI 110"
+    assert len(summary_prd["DesignResults"]) == 1
+    assert summary_prd["DesignResults"][0]["Name"] == "momentFTLBS"
 
     # Malformed PRD
     summary_bad = _extract_solution_summary({"invalid": "data"})
     assert summary_bad["status"] == "success"
     assert summary_bad["selected_product"] is None
+    assert summary_bad["selected_solution"] is None
+    assert summary_bad["DesignResults"] == []
 
 
 def test_add_forte_floor_joist_to_project_full():
     prd = sample_prd()
+    sol_resp = sample_solutions_response()
 
     with (
         patch("server.services.forte.forte_joist._get_forte_token", return_value="tok"),
@@ -321,6 +370,7 @@ def test_add_forte_floor_joist_to_project_full():
         patch("server.services.forte.forte_joist._save_file"),
         patch("server.services.forte.forte_joist._modify_member_name", return_value=prd),
         patch("server.services.forte.forte_joist._modify_interior_span", return_value=prd),
+        patch("server.services.forte.forte_joist._get_solutions_data", return_value=sol_resp),
     ):
         res = add_forte_floor_joist_to_project(
             token="tok",
@@ -330,6 +380,8 @@ def test_add_forte_floor_joist_to_project_full():
         )
         assert res["status"] == "success"
         assert res["selected_product"] == "TJI 110"
+        assert res["selected_solution"]["IsSelected"] is True
+        assert len(res["DesignResults"]) == 1
 
 
 def test_add_forte_floor_joist_to_project_locked_error():
@@ -341,3 +393,4 @@ def test_add_forte_floor_joist_to_project_locked_error():
         res = add_forte_floor_joist_to_project(token="tok", file_tree_item_id=100)
         assert res["status"] == "error"
         assert "file is open in browser" in res["message"]
+

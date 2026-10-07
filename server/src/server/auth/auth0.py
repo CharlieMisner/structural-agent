@@ -73,8 +73,8 @@ class Auth0Validator:
                 token,
                 signing_key.key,
                 algorithms=self.algorithms,
-                audience=self.audience if self.audience else None,
                 issuer=issuer,
+                options={"verify_aud": False},
             )
             return payload
         except jwt.PyJWTError as e:

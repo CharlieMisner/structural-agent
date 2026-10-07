@@ -1,6 +1,7 @@
+from typing import Optional
 from fastapi import APIRouter, Depends
 
-from server.auth.auth0 import User, get_current_user
+from server.auth.auth0 import User, get_optional_current_user
 from server.dtos.fs import FsCreateRequest
 from server.services.fs import create_file, create_folder, delete_path
 
@@ -10,7 +11,7 @@ router = APIRouter(prefix="/api/fs", tags=["FileSystem"])
 @router.post("/create-file")
 async def api_create_file(
     request: FsCreateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     return create_file(request.path)
 
@@ -18,7 +19,7 @@ async def api_create_file(
 @router.post("/create-folder")
 async def api_create_folder(
     request: FsCreateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     return create_folder(request.path)
 
@@ -26,6 +27,6 @@ async def api_create_folder(
 @router.post("/delete")
 async def api_delete_path(
     request: FsCreateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     return delete_path(request.path)
