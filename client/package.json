@@ -11,6 +11,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build:desktop": "../scripts/build_package.sh",
+    "build:desktop:win": "powershell -ExecutionPolicy Bypass -File ../scripts/build_package.ps1",
+    "deploy:server": "../scripts/deploy_server.sh",
     "tauri": "tauri"
   },
   "dependencies": {

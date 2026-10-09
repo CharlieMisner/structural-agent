@@ -1,0 +1,26 @@
+app = "statikor-server" # pick a unique name or let fly choose
+primary_region = "sjc"  # choose your closest region (sea = Seattle, sjc = San Jose, ord = Chicago, etc.)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 500
+
+[env]
+  AUTH0_DOMAIN = "statikor.us.auth0.com"
+  AUTH0_AUDIENCE = "https://api.statikor.com"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

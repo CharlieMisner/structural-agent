@@ -45,6 +45,8 @@ app.add_middleware(
         "tauri://localhost",         # Tauri macOS/Linux webview
         "https://tauri.localhost",   # Tauri Windows webview
         "http://tauri.localhost",
+        "https://statikor.com",
+        "https://www.statikor.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],

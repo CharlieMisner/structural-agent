@@ -16,10 +16,16 @@ echo "🎯 Host Target Triple: ${TARGET_TRIPLE}"
 PYTHON_BIN=""
 if [ -f "$ROOT_DIR/sidecar/.venv/bin/python" ]; then
     PYTHON_BIN="$ROOT_DIR/sidecar/.venv/bin/python"
+elif [ -f "$ROOT_DIR/sidecar/.venv/Scripts/python.exe" ]; then
+    PYTHON_BIN="$ROOT_DIR/sidecar/.venv/Scripts/python.exe"
 elif [ -f "$ROOT_DIR/server/.venv/bin/python" ]; then
     PYTHON_BIN="$ROOT_DIR/server/.venv/bin/python"
+elif [ -f "$ROOT_DIR/server/.venv/Scripts/python.exe" ]; then
+    PYTHON_BIN="$ROOT_DIR/server/.venv/Scripts/python.exe"
 elif command -v python3 &> /dev/null; then
     PYTHON_BIN="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_BIN="python"
 else
     echo "❌ Error: Python 3 not found."
     exit 1
@@ -63,7 +69,7 @@ fi
 echo "📋 Copying compiled sidecar binary to Tauri binaries directory..."
 cp -f "$COMPILED_BIN" "$TARGET_BIN"
 cp -f "$COMPILED_BIN" "$PLAIN_BIN"
-chmod +x "$TARGET_BIN" "$PLAIN_BIN"
+chmod +x "$TARGET_BIN" "$PLAIN_BIN" || true
 
 echo "✅ Sidecar native binary ready: ${TARGET_BIN}"
 
@@ -74,5 +80,7 @@ npm run tauri build
 
 echo "======================================================"
 echo " 🎉 Statikor Production Build Complete!              "
-echo " 📦 App Bundle: client/target/release/bundle/macos/Statikor.app"
+echo " 🍎 macOS App:      client/src-tauri/target/release/bundle/macos/Statikor.app"
+echo " 🪟 Windows Setup:  client/src-tauri/target/release/bundle/nsis/Statikor_0.1.0_x64-setup.exe"
 echo "======================================================"
+
