@@ -18,6 +18,14 @@ yarn-error.log*
 .DS_Store
 *.local
 
+# Coverage
+coverage/
+*/coverage/
+.coverage
+.coverage*
+*.coverage
+htmlcov/
+
 # Environment
 .env
 .env*.local

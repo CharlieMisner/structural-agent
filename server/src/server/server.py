@@ -47,6 +47,7 @@ app.add_middleware(
         "http://tauri.localhost",
         "https://statikor.com",
         "https://www.statikor.com",
+        "https://api.statikor.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],

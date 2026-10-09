@@ -57,7 +57,7 @@ echo "------------------------------------------------------"
 echo ""
 echo "======================================================"
 echo " 🎉 Statikor Server Successfully Deployed to Fly.io!"
-echo " 🌐 App URL: https://statikor.com (or https://$("$FLY_CMD" status --json | grep -o '"Hostname":"[^"]*"' | head -n 1 | cut -d'"' -f4))"
+echo " 🌐 App URL: https://api.statikor.com (or https://$("$FLY_CMD" status --json | grep -o '"Hostname":"[^"]*"' | head -n 1 | cut -d'"' -f4))"
 echo " 🩺 Health:  $("$FLY_CMD" status)"
 echo "======================================================"
 

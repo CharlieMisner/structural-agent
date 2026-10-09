@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Loader2, ArrowUp, Calculator, ChevronDown, ChevronRight } from 'lucide-react';
+import { FileText, Loader2, ArrowUp, Calculator, ChevronDown, ChevronRight, LogIn } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -7,6 +7,7 @@ import 'katex/dist/katex.min.css';
 import { ProjectState } from '../types/fs';
 import { streamChat, AGENT_BASE_URL } from '../services/agentApi';
 import { useAuth } from '../auth/AuthProvider';
+
 
 export interface ToolCallRecord {
   tool: string;
@@ -86,11 +87,31 @@ const ToolCallCard = ({ tc }: { tc: ToolCallRecord }) => {
 };
 
 export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => {
-  const { getAccessToken } = useAuth();
+  const { getAccessToken, isAuthenticated, loginWithPopup, user } = useAuth();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [toolStatus, setToolStatus] = useState<string | null>(null);
+
+  // Track authentication transitions to notify user upon successful login
+  const wasAuthenticatedRef = useRef(isAuthenticated);
+
+  useEffect(() => {
+    if (!wasAuthenticatedRef.current && isAuthenticated) {
+      const email = user?.email || user?.name;
+      if (email) {
+        const authSuccessMsg: Message = {
+          id: `auth-success-${Date.now()}`,
+          sender: 'agent',
+          content: `User ${email} successfully authenticated.`,
+        };
+        setMessages((prev) => [...prev, authSuccessMsg]);
+        wasAuthenticatedRef.current = true;
+      }
+    } else if (!isAuthenticated) {
+      wasAuthenticatedRef.current = false;
+    }
+  }, [isAuthenticated, user?.email, user?.name]);
 
   // Once focused, the wave animation and glow are permanently disabled and will never wave again
   const [hasBeenFocused, setHasBeenFocused] = useState(false);
@@ -119,6 +140,25 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
   const handleSendPrompt = async (promptText: string) => {
     const text = promptText.trim();
     if (!text || isGenerating) return;
+
+    if (!isAuthenticated) {
+      const userMsg: Message = {
+        id: String(Date.now()),
+        sender: 'user',
+        content: text,
+      };
+
+      const agentMsgId = String(Date.now() + 1);
+      const authRequiredMsg: Message = {
+        id: agentMsgId,
+        sender: 'agent',
+        content: 'You must sign in before we can get to work.',
+      };
+
+      setMessages((prev) => [...prev, userMsg, authRequiredMsg]);
+      setInput('');
+      return;
+    }
 
     const userMsg: Message = {
       id: String(Date.now()),
@@ -291,6 +331,18 @@ export const PromptWorkspace: React.FC<PromptWorkspaceProps> = ({ project }) => 
                     >
                       {msg.content}
                     </ReactMarkdown>
+
+                    {msg.content === 'You must sign in before we can get to work.' && !isAuthenticated && (
+                      <div className="mt-3">
+                        <button
+                          onClick={() => loginWithPopup()}
+                          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00c8e6] border border-[#00f0ff]/30 transition-colors text-xs font-mono font-medium cursor-pointer"
+                        >
+                          <LogIn className="w-3.5 h-3.5" />
+                          <span>Sign In</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
