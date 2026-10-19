@@ -27,7 +27,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "nsis"],
+    "targets": ["app", "dmg", "nsis"],
     "externalBin": [
       "binaries/statikor-sidecar"
     ],

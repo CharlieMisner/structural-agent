@@ -80,6 +80,7 @@ npm run tauri build
 
 echo "======================================================"
 echo " 🎉 Statikor Production Build Complete!              "
+echo " 🍏 macOS DMG:      client/src-tauri/target/release/bundle/dmg/Statikor_0.1.0_*.dmg"
 echo " 🍎 macOS App:      client/src-tauri/target/release/bundle/macos/Statikor.app"
 echo " 🪟 Windows Setup:  client/src-tauri/target/release/bundle/nsis/Statikor_0.1.0_x64-setup.exe"
 echo "======================================================"

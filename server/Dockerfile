@@ -27,5 +27,5 @@ RUN uv sync --frozen --no-dev
 # Expose internal port
 EXPOSE 8000
 
-# Run uvicorn on 0.0.0.0:8000 (required for Fly.io container networking)
+# Run uvicorn on 0.0.0.0:8000 (required for Fly.io edge proxy to reach the container)
 CMD ["uv", "run", "uvicorn", "server.server:app", "--host", "0.0.0.0", "--port", "8000"]
