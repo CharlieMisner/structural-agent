@@ -27,13 +27,16 @@ vi.mock('@tauri-apps/api/event', () => ({
   }),
 }));
 
-import { AuthProvider, useAuth } from '../auth/AuthProvider';
+import { AuthProvider, useAuth, isDesktopAuthCallback } from '../auth/AuthProvider';
 
 describe('AuthProvider & useAuth hook', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     eventCallback = null;
     vi.unstubAllEnvs();
+    sessionStorage.clear();
+    localStorage.clear();
+    window.history.pushState({}, '', '/');
     mockIsTauri.mockReturnValue(false);
     mockUseAuth0.mockReturnValue({
       isAuthenticated: false,
@@ -323,5 +326,98 @@ describe('AuthProvider & useAuth hook', () => {
     expect(
       screen.getByText(/You may now close this tab and return to the Statikor desktop app/i)
     ).toBeInTheDocument();
+    // Guarantee that children (the main application) is NEVER rendered
+    expect(screen.queryByTestId('app-content')).not.toBeInTheDocument();
+  });
+
+  it('correctly detects desktop auth callback via isDesktopAuthCallback helper', () => {
+    mockIsTauri.mockReturnValue(false);
+    window.history.pushState({}, '', '/');
+    expect(isDesktopAuthCallback()).toBe(false);
+
+    window.history.pushState({}, '', '/#access_token=test_token');
+    expect(isDesktopAuthCallback()).toBe(true);
+
+    window.history.pushState({}, '', '/?code=123&state=statikor_session_1');
+    expect(isDesktopAuthCallback()).toBe(true);
+
+    window.history.pushState({}, '', '/?code=123&state=regular_auth0_state');
+    expect(isDesktopAuthCallback()).toBe(false);
+
+    sessionStorage.setItem('statikor_browser_auth_handoff', 'true');
+    expect(isDesktopAuthCallback()).toBe(true);
+    sessionStorage.clear();
+
+    mockIsTauri.mockReturnValue(true);
+    expect(isDesktopAuthCallback()).toBe(false);
+  });
+
+  it('renders browser handoff error UI when desktop auth callback contains error without rendering children', async () => {
+    mockIsTauri.mockReturnValue(false);
+    vi.stubEnv('VITE_AUTH0_DOMAIN', 'test.auth0.com');
+    vi.stubEnv('VITE_AUTH0_CLIENT_ID', 'client123');
+
+    window.history.pushState(
+      {},
+      '',
+      '/?error=access_denied&error_description=User+cancelled+login&state=statikor_err_1'
+    );
+
+    render(
+      <AuthProvider>
+        <div data-testid="app-content">App Body</div>
+      </AuthProvider>
+    );
+
+    expect(screen.getByText(/Authentication Failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/User cancelled login/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/You may now close this tab and return to the Statikor desktop app/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('app-content')).not.toBeInTheDocument();
+  });
+
+  it('persists browser handoff UI across URL cleanup and page reloads via sessionStorage', async () => {
+    mockIsTauri.mockReturnValue(false);
+    vi.stubEnv('VITE_AUTH0_DOMAIN', 'test.auth0.com');
+    vi.stubEnv('VITE_AUTH0_CLIENT_ID', 'client123');
+
+    sessionStorage.setItem('statikor_browser_auth_handoff', 'true');
+    sessionStorage.setItem('statikor_browser_auth_email', 'persisted@statikor.com');
+    window.history.pushState({}, '', '/');
+
+    render(
+      <AuthProvider>
+        <div data-testid="app-content">App Body</div>
+      </AuthProvider>
+    );
+
+    expect(screen.getByText(/Authentication Complete/i)).toBeInTheDocument();
+    expect(screen.getByText(/persisted@statikor.com/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('app-content')).not.toBeInTheDocument();
+  });
+
+  it('handles authorization code callback with statikor_ state without rendering children', async () => {
+    mockIsTauri.mockReturnValue(false);
+    vi.stubEnv('VITE_AUTH0_DOMAIN', 'test.auth0.com');
+    vi.stubEnv('VITE_AUTH0_CLIENT_ID', 'client123');
+
+    window.history.pushState(
+      {},
+      '',
+      '/?code=code_abc_123&state=statikor_code_sess'
+    );
+
+    render(
+      <AuthProvider>
+        <div data-testid="app-content">App Body</div>
+      </AuthProvider>
+    );
+
+    expect(screen.getByText(/Authentication Complete/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/You may now close this tab and return to the Statikor desktop app/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('app-content')).not.toBeInTheDocument();
   });
 });

@@ -124,10 +124,21 @@ export const ForteLoginDialog: React.FC<ForteLoginDialogProps> = ({
       if (projectPath) {
         try {
           if (isTauri()) {
-            finalToolConfig = await invoke<ToolConfig>('init_forte_project_file', {
+            const resTool = await invoke<ToolConfig>('init_forte_project_file', {
               projectPath,
               token,
               username: authedUsername,
+            });
+            finalToolConfig = {
+              ...finalToolConfig,
+              ...resTool,
+              authenticated: true,
+              username: authedUsername,
+              tokenExpiresAt,
+            };
+            await invoke('save_project_tool', {
+              projectPath,
+              tool: finalToolConfig,
             });
           } else {
             const initRes = await fetch('http://127.0.0.1:41420/api/cloud-software/forte/init-file', {
@@ -136,21 +147,33 @@ export const ForteLoginDialog: React.FC<ForteLoginDialogProps> = ({
               body: JSON.stringify({ projectPath, token, username: authedUsername }),
             });
             if (initRes.ok) {
-              finalToolConfig = await initRes.json();
-            } else {
-              await fetch('http://127.0.0.1:41420/api/project/cloud-software/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ projectPath, software: finalToolConfig }),
-              });
+              const resTool = await initRes.json();
+              finalToolConfig = {
+                ...finalToolConfig,
+                ...resTool,
+                authenticated: true,
+                username: authedUsername,
+                tokenExpiresAt,
+              };
             }
+            await fetch('http://127.0.0.1:41420/api/project/cloud-software/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ projectPath, software: finalToolConfig }),
+            });
           }
         } catch (initErr) {
           console.warn('Failed to initialize Forte project file, saving base config:', initErr);
           if (isTauri()) {
-            await invoke('save_project_cloud_software', {
+            await invoke('save_project_tool', {
               projectPath,
-              software: finalToolConfig,
+              tool: finalToolConfig,
+            }).catch(() => null);
+          } else {
+            await fetch('http://127.0.0.1:41420/api/project/cloud-software/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ projectPath, software: finalToolConfig }),
             }).catch(() => null);
           }
         }

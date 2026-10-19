@@ -95,3 +95,46 @@ async def test_forte_controller():
             res_init = await ac.post("/api/cloud-software/forte/init-file", json={"projectPath": "/path"})
             assert res_init.status_code == 200
             assert res_init.json()["fileId"] == 123
+
+
+@pytest.mark.asyncio
+async def test_home_page_and_download_endpoints():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Home page
+        res_home = await ac.get("/")
+        assert res_home.status_code == 200
+        assert "Structural engineering AI that meets you where you work." in res_home.text
+        assert "STATIKOR" in res_home.text
+
+        # Favicon
+        res_fav = await ac.get("/favicon.ico")
+        assert res_fav.status_code == 200
+
+        # Windows download redirect
+        res_win = await ac.get("/download/windows", follow_redirects=False)
+        assert res_win.status_code == 302
+        assert "Statikor_0.1.0_x64-setup.exe" in res_win.headers["location"]
+
+        # Mac download redirect
+        res_mac = await ac.get("/download/mac", follow_redirects=False)
+        assert res_mac.status_code == 302
+        assert "Statikor_0.1.0_universal.dmg" in res_mac.headers["location"]
+
+        # Dynamic download latest (Windows user agent)
+        res_latest_win = await ac.get(
+            "/download/latest",
+            headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+            follow_redirects=False,
+        )
+        assert res_latest_win.status_code == 302
+        assert "setup.exe" in res_latest_win.headers["location"]
+
+        # Dynamic download latest (Mac user agent)
+        res_latest_mac = await ac.get(
+            "/download/latest",
+            headers={"user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+            follow_redirects=False,
+        )
+        assert res_latest_mac.status_code == 302
+        assert ".dmg" in res_latest_mac.headers["location"]

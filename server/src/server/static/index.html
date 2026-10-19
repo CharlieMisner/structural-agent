@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statikor — Structural Engineering AI That Meets You Where You Work</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="shortcut icon" href="/static/favicon.ico">
+  <meta name="description" content="Statikor automates member sizing in Forte, syncs structural framing in Revit, and generates code-compliant calculation packages directly from your engineering workspace.">
+  <meta property="og:title" content="Statikor — Structural Engineering AI">
+  <meta property="og:description" content="Structural engineering AI that meets you where you work.">
+  <meta property="og:image" content="/static/logo.png">
+  
+  <style>
+    :root {
+      color-scheme: dark;
+      --void: #03070d;
+      --bg: #050d18;
+      --surface: #091728;
+      --surface-light: #0e2238;
+      --glass: rgba(6, 17, 30, 0.85);
+      --border: #0e2236;
+      --border-light: #163654;
+      --cyan: #00f0ff;
+      --cyan-hover: #38bdf8;
+      --cyan-dim: #0284c7;
+      --cyan-glow: rgba(0, 240, 255, 0.32);
+      --cyan-border: rgba(0, 240, 255, 0.22);
+      --text-bright: #ccd8e4;
+      --text-muted: #7e9bb4;
+      --text-dark: #334455;
+      --font-sans: 'ArtifaktElement', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, Inconsolata, 'Fira Code', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--void);
+      color: var(--text-bright);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% -10%, rgba(0, 240, 255, 0.12) 0%, transparent 60%),
+        linear-gradient(rgba(14, 34, 56, 0.22) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14, 34, 56, 0.22) 1px, transparent 1px);
+      background-size: 100% 100%, 36px 36px, 36px 36px;
+    }
+
+    /* Minimal sleek scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--void);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #0d2238;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #143557;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Header Nav */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(3, 7, 13, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      font-size: 0.95rem;
+      color: var(--text-bright);
+      text-transform: uppercase;
+    }
+
+    .brand img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .nav-links a:hover {
+      color: var(--cyan);
+      transition: color 0.15s ease;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid var(--cyan-border);
+      color: var(--cyan);
+      letter-spacing: 0.05em;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .btn-download-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--cyan);
+      color: #ffffff;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+
+    .btn-download-sm:hover {
+      background: var(--cyan);
+      color: #03070d;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 5rem 0 3.5rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(0, 240, 255, 0.07);
+      border: 1px solid var(--cyan-border);
+      color: var(--cyan);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-title {
+      font-size: clamp(2.3rem, 5.5vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      color: #ffffff;
+      max-width: 950px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .cyan-gradient {
+      background: linear-gradient(135deg, #00f0ff 20%, #38bdf8 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.05rem, 2vw, 1.3rem);
+      color: var(--text-muted);
+      max-width: 760px;
+      margin: 0 auto 2.5rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    /* Hero CTAs */
+    .hero-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .cta-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--cyan);
+      color: #03070d;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.85rem 1.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--cyan);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.45);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: #ffffff;
+      border-color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.75);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      background: var(--surface);
+      color: var(--text-bright);
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.85rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--cyan);
+      color: #ffffff;
+      transform: translateY(-2px);
+      background: var(--surface-light);
+    }
+
+    .os-meta {
+      font-size: 0.8rem;
+      color: #64829d;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .os-meta span {
+      color: var(--text-muted);
+    }
+
+    /* Client Desktop HUD Preview Window */
+    .hud-window {
+      background: #050d18;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 30px rgba(0, 240, 255, 0.08);
+      max-width: 1040px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .window-titlebar {
+      height: 36px;
+      background: #040911;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #728ea6;
+      user-select: none;
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .ctrl-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #1c334a;
+    }
+
+    .ctrl-dot.red { background: #ff4757; }
+    .ctrl-dot.yellow { background: #ffa502; }
+    .ctrl-dot.green { background: #2ed573; }
+
+    .window-body {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 480px;
+    }
+
+    @media (max-width: 840px) {
+      .window-body {
+        grid-template-columns: 1fr;
+      }
+      .hud-sidebar {
+        display: none;
+      }
+    }
+
+    /* HUD Sidebar */
+    .hud-sidebar {
+      background: #040a13;
+      border-right: 1px solid var(--border);
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+
+    .sidebar-section-title {
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      color: #4a6884;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.1em;
+    }
+
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      color: #8da6bd;
+      margin-bottom: 2px;
+    }
+
+    .tree-item.active {
+      background: rgba(0, 240, 255, 0.08);
+      color: var(--cyan);
+      border-left: 2px solid var(--cyan);
+    }
+
+    /* HUD Workspace */
+    .hud-workspace {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.5rem;
+      background: radial-gradient(circle at 100% 100%, rgba(0, 240, 255, 0.03) 0%, transparent 50%);
+    }
+
+    .action-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .stream-msg {
+      background: #071322;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1.1rem;
+      line-height: 1.6;
+    }
+
+    .stream-msg.user {
+      border-color: rgba(0, 240, 255, 0.25);
+      background: rgba(0, 240, 255, 0.04);
+    }
+
+    .stream-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.4rem;
+      font-size: 0.7rem;
+      color: #6384a3;
+    }
+
+    .stream-badge {
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .calc-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(0, 240, 255, 0.1);
+      color: var(--cyan);
+      margin-right: 0.4rem;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    /* Glowing Prompt Bar */
+    .prompt-container {
+      position: relative;
+      margin-top: auto;
+    }
+
+    .prompt-base-glow {
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      box-shadow:
+        0 0 18px 1px rgba(0, 240, 255, 0.32),
+        0 0 42px 4px rgba(0, 240, 255, 0.15);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    @keyframes waveSweep {
+      0% { background-position: 0px 0; }
+      100% { background-position: 200px 0; }
+    }
+
+    .prompt-shimmer-wave {
+      position: absolute;
+      inset: -1.5px;
+      border-radius: 11px;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 240, 255, 0.04) 0%,
+        rgba(0, 240, 255, 0.20) 25%,
+        rgba(0, 240, 255, 0.65) 50%,
+        rgba(0, 240, 255, 0.20) 75%,
+        rgba(0, 240, 255, 0.04) 100%
+      );
+      background-size: 200px 100%;
+      animation: waveSweep 2.8s linear infinite;
+      filter: blur(3.5px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .prompt-box {
+      position: relative;
+      z-index: 2;
+      background: #030811;
+      border: 1px solid var(--cyan);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text-bright);
+      font-size: 0.85rem;
+    }
+
+    .prompt-icon {
+      color: var(--cyan);
+      font-weight: bold;
+    }
+
+    .prompt-text {
+      flex: 1;
+      color: #ffffff;
+      font-family: var(--font-mono);
+    }
+
+    .prompt-enter {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(0, 240, 255, 0.15);
+      color: var(--cyan);
+      border: 1px solid var(--cyan-border);
+    }
+
+    /* Integrations Section */
+    .section {
+      padding: 5.5rem 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 3.5rem;
+    }
+
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.25;
+      margin-bottom: 1rem;
+    }
+
+    .section-subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    /* Grid cards */
+    .integrations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .card:hover {
+      border-color: var(--cyan-border);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.08);
+    }
+
+    .card-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--cyan-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan);
+      margin-bottom: 1.25rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.65rem;
+    }
+
+    .card-body {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      background: #091728;
+      border: 1px solid #163654;
+      color: #8daec9;
+    }
+
+    /* Capabilities / Features */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+    }
+
+    .feature-item {
+      display: flex;
+      gap: 1.25rem;
+    }
+
+    .feature-bullet {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--cyan-border);
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .feature-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.45rem;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Download Banner */
+    .download-banner {
+      background: linear-gradient(135deg, #050d18 0%, #081729 100%);
+      border: 1px solid var(--cyan-border);
+      border-radius: 16px;
+      padding: 3.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 0 50px rgba(0, 240, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .download-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 0 2rem;
+      background: #020509;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .footer-content {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .footer-links a:hover {
+      color: var(--cyan);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(14, 34, 54, 0.5);
+      padding-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #4f6b85;
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="brand">
+      <img src="/static/logo.png" alt="Statikor">
+      <span>Statikor</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="#integrations">Drafting, Calcs & Analysis</a>
+      <a href="#capabilities">Engineering Capabilities</a>
+      <a href="#workflow">Download</a>
+    </nav>
+
+    <div class="header-actions">
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>DESKTOP ASSISTANT</span>
+      </div>
+      <a href="/download/latest" id="nav-download-btn" class="btn-download-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Download</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="badge-pill">
+        <span>★ Direct Member Sizing & Plan Coordination</span>
+      </div>
+
+      <h1 class="hero-title">
+        Structural engineering AI that <span class="cyan-gradient">meets you where you work.</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Stop re-entering numbers between calculation sheets and models. Statikor automates member sizing in Forte, syncs structural framing in Revit, and generates code-compliant design packages—directly from your engineering workspace.
+      </p>
+
+      <div class="hero-cta">
+        <div class="cta-buttons">
+          <a href="/download/latest" id="primary-download-btn" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span id="primary-btn-label">Download for Windows (.exe)</span>
+          </a>
+
+          <a href="#integrations" class="btn-secondary">
+            <span>Explore Workflow</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+        </div>
+
+        <div class="os-meta">
+          <span id="os-detected-text">Detected: Windows 64-bit</span>
+          <span>•</span>
+          <a href="/download/windows" style="text-decoration: underline; color: #8daec9;">Windows (.exe)</a>
+          <span>•</span>
+          <a href="/download/mac" style="text-decoration: underline; color: #8daec9;">macOS (.dmg)</a>
+        </div>
+      </div>
+
+      <!-- Live Desktop HUD Interface Preview -->
+      <div class="hud-window">
+        <div class="window-titlebar">
+          <div class="window-controls">
+            <div class="ctrl-dot red"></div>
+            <div class="ctrl-dot yellow"></div>
+            <div class="ctrl-dot green"></div>
+          </div>
+          <div>Statikor — Project: 24-104-Meadowbrook-Framing [IBC 2024 / ASCE 7-22 / NDS 2024]</div>
+          <div style="color: #2ed573; font-size: 0.7rem; font-weight: 600;">✓ ASCE 7-22 VERIFIED</div>
+        </div>
+
+        <div class="window-body">
+          <!-- Sidebar -->
+          <div class="hud-sidebar">
+            <div class="sidebar-section-title">Project Calculations</div>
+            <div class="tree-item active">📁 24-104-Meadowbrook</div>
+            <div class="tree-item" style="padding-left: 1.5rem;">📐 Roof_Joist_Layout.xml</div>
+            <div class="tree-item" style="padding-left: 1.5rem;">🏗️ Structural_Framing.rvt</div>
+            <div class="tree-item" style="padding-left: 1.5rem;">📊 Beam_Schedule.xlsx</div>
+            <div class="tree-item" style="padding-left: 1.5rem;">📑 Stamped_Calcs.pdf</div>
+
+            <div class="sidebar-section-title" style="margin-top: 1.5rem;">Connected Software</div>
+            <div class="tree-item">
+              <span style="color: #2ed573;">●</span> Weyerhaeuser Forte
+            </div>
+            <div class="tree-item">
+              <span style="color: #2ed573;">●</span> Autodesk Revit
+            </div>
+            <div class="tree-item">
+              <span style="color: var(--cyan);">●</span> Enercalc Calculation Engine
+            </div>
+          </div>
+
+          <!-- Workspace -->
+          <div class="hud-workspace">
+            <div class="action-stream">
+              <div class="stream-msg user">
+                <div class="stream-header">
+                  <span>STRUCTURAL ENGINEER</span>
+                  <span>16:04:12</span>
+                </div>
+                <div>"Size the second-floor glulam girders for 20 psf Dead, 50 psf Live over a 24' clear span. Verify bearing length and total load deflection under IBC 2024."</div>
+              </div>
+
+              <div class="stream-msg">
+                <div class="stream-header">
+                  <span class="stream-badge">STATIKOR STRUCTURAL AGENT</span>
+                  <span>16:04:14</span>
+                </div>
+                <div style="margin-bottom: 0.5rem;">
+                  <span class="calc-tag">IBC 2024 §1604</span>
+                  <span class="calc-tag">ASCE 7-22 §2.4.1</span>
+                  <span class="calc-tag">NDS 2024 Table 5A</span>
+                </div>
+                <div style="color: #b0c9df; font-size: 0.78rem;">
+                  ✓ Governing Load: <code style="color: var(--cyan);">w = 1.2D + 1.6L = 104 plf × 12' trib = 1,248 plf</code><br>
+                  ✓ Member Selected: <strong style="color: #ffffff;">5-1/8" × 21" 24F-V4 DF Glulam</strong><br>
+                  ✓ Flexural Capacity (<code style="color: #2ed573;">Mu / φMn = 74.2%</code>) | Shear (<code style="color: #2ed573;">Vu / φVn = 58.1%</code>)<br>
+                  ✓ Deflection: Total Load <code style="color: #2ed573;">L/410 &lt; L/240</code> | Live Load <code style="color: #2ed573;">L/520 &lt; L/360</code> (Pass)<br>
+                  ✓ Bearing Check: <code style="color: #2ed573;">3.5" bearing length required on 2x6 stud wall (Pass)</code><br>
+                  ✓ Actions: <span style="color: var(--cyan);">Updated Forte run BM-201 and synchronized Revit framing schedule.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Glowing Prompt Bar -->
+            <div class="prompt-container">
+              <div class="prompt-base-glow"></div>
+              <div class="prompt-shimmer-wave"></div>
+              <div class="prompt-box">
+                <span class="prompt-icon">⚡</span>
+                <span class="prompt-text">Generate calculation package and push updated member tags to Revit Level 2 framing...</span>
+                <span class="prompt-enter">EXECUTE [ENTER]</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Three Pillars Section: Drafting & Modeling, Calculations, Analysis -->
+  <section id="integrations" class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Integrated Engineering Workflow</div>
+        <h2 class="section-title">Drafting, Calculations, and Analysis in Lockstep</h2>
+        <p class="section-subtitle">
+          Statikor bridges the three core pillars of structural engineering practice—eliminating manual data re-entry and plan check discrepancies.
+        </p>
+      </div>
+
+      <div class="integrations-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <!-- 1. Drafting and Modeling -->
+        <div class="card">
+          <div class="card-icon-wrap">📐</div>
+          <h3 class="card-title">Drafting & Modeling</h3>
+          <p class="card-body">
+            The AI reads and reasons directly about your AutoCAD files and Revit models to identify framing incongruities, broken load paths, and mismatched callouts before plan check. Automatically applies updates, synchronizes beam tags, and keeps framing schedules aligned with your latest designs.
+          </p>
+          <div class="card-badge">AutoCAD & Autodesk Revit</div>
+        </div>
+
+        <!-- 2. Calculations -->
+        <div class="card">
+          <div class="card-icon-wrap">⚡</div>
+          <h3 class="card-title">Calculations</h3>
+          <p class="card-body">
+            Never re-enter numbers by hand. Statikor pulls spans, tributary areas, and framing geometries directly from your models and drawings to automatically populate Weyerhaeuser ForteWEB and Enercalc. Runs member sizing for joists, glulams, LVL, and headers with verified code compliance.
+          </p>
+          <div class="card-badge">ForteWEB & Enercalc</div>
+        </div>
+
+        <!-- 3. Analysis -->
+        <div class="card">
+          <div class="card-icon-wrap">🏗️</div>
+          <h3 class="card-title">Analysis</h3>
+          <p class="card-body">
+            Connects your 3D finite element models to downstream design checks. Extracts governing moment, shear, and axial load envelopes directly from ETABS, SAP2000, and RISA-3D models to audit lateral force-resisting frames and size members without error-prone manual transcription.
+          </p>
+          <div class="card-badge">ETABS, SAP2000 & RISA-3D</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Engineering Capabilities Section -->
+  <section id="capabilities" class="section" style="background: rgba(5, 13, 24, 0.5);">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Built For Practicing Engineers</div>
+        <h2 class="section-title">Designed for Accuracy, Code Compliance, and Speed</h2>
+        <p class="section-subtitle">
+          Every feature is built around the realities of delivering stamped structural drawings and calculation packages.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-bullet">📐</div>
+          <div>
+            <h4 class="feature-title">Transparent Math & Code Citations</h4>
+            <p class="feature-desc">
+              No black boxes. Every calculation explicitly cites the governing sections of IBC 2024, ASCE 7-22, NDS 2024, and AISC 360-22 with step-by-step math ready for peer review and city plan check.
+            </p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-bullet">🔄</div>
+          <div>
+            <h4 class="feature-title">Zero Discrepancies Between Plans & Calcs</h4>
+            <p class="feature-desc">
+              The number one source of plan check redlines is mismatched member sizes between calculation binders and structural drawings. Statikor synchronizes both simultaneously.
+            </p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-bullet">🔒</div>
+          <div>
+            <h4 class="feature-title">Your Client Project Files Stay Private</h4>
+            <p class="feature-desc">
+              Your drawings, BIM models, and proprietary calculation packages stay secure on your local workstation. Your confidential project files are never uploaded to public databases.
+            </p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-bullet">⚡</div>
+          <div>
+            <h4 class="feature-title">Fast Design Revisions</h4>
+            <p class="feature-desc">
+              When architects move columns or shift bearing walls, re-evaluating the tributary load path and re-sizing affected members takes seconds instead of hours of tedious manual re-work.
+            </p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-bullet">⚖️</div>
+          <div>
+            <h4 class="feature-title">Complete ASCE 7-22 Load Combinations</h4>
+            <p class="feature-desc">
+              Automates ASD and LRFD load combinations including dead, live, roof live, snow, wind, and seismic. Verifies deflection limits (L/360 live, L/240 total, or custom limits).
+            </p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-bullet">📋</div>
+          <div>
+            <h4 class="feature-title">One-Click Calculation Binders</h4>
+            <p class="feature-desc">
+              Assemble professional, stamped calculation binders combining member reports from Forte, Enercalc, and custom sheets into a clean, unified submission package.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Banner -->
+  <section id="workflow" class="section">
+    <div class="container">
+      <div class="download-banner">
+        <div class="badge-pill" style="margin-bottom: 1rem;">Early Access</div>
+        <h2 style="font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; color: #ffffff; margin-bottom: 1rem;">
+          Get Started with Statikor
+        </h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 2rem;">
+          Download the desktop assistant for Windows and macOS. Ready to integrate into your existing structural engineering workflow.
+        </p>
+
+        <div class="cta-buttons">
+          <a href="/download/windows" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download for Windows (.exe)</span>
+          </a>
+          <a href="/download/mac" class="btn-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download for macOS (.dmg)</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="brand">
+          <img src="/static/logo.png" alt="Statikor">
+          <span>STATIKOR</span>
+        </div>
+
+        <div class="footer-links">
+          <a href="#integrations">Drafting & Modeling</a>
+          <a href="#integrations">Calculations</a>
+          <a href="#integrations">Analysis</a>
+          <a href="#capabilities">Capabilities</a>
+          <a href="/download/windows">Windows (.exe)</a>
+          <a href="/download/mac">macOS (.dmg)</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Statikor. Structural Engineering AI. All rights reserved.</div>
+        <div>Built for Licensed Structural & Civil Engineers</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- OS Detection Script -->
+  <script>
+    (function() {
+      const ua = navigator.userAgent;
+      const isMac = ua.includes('Mac');
+      const isWin = ua.includes('Win');
+      
+      const primaryBtn = document.getElementById('primary-download-btn');
+      const primaryLabel = document.getElementById('primary-btn-label');
+      const osText = document.getElementById('os-detected-text');
+      const navBtn = document.getElementById('nav-download-btn');
+
+      if (isMac) {
+        if (primaryBtn) primaryBtn.href = '/download/mac';
+        if (navBtn) navBtn.href = '/download/mac';
+        if (primaryLabel) primaryLabel.textContent = 'Download for macOS (.dmg)';
+        if (osText) osText.textContent = 'Detected: macOS Universal';
+      } else {
+        if (primaryBtn) primaryBtn.href = '/download/windows';
+        if (navBtn) navBtn.href = '/download/windows';
+        if (primaryLabel) primaryLabel.textContent = 'Download for Windows (.exe)';
+        if (osText) osText.textContent = 'Detected: Windows 10/11 (64-bit)';
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -280,6 +280,16 @@ fn save_project_tool(project_path: String, tool: ToolConfig) -> Result<ProjectCo
     Ok(config)
 }
 
+#[tauri::command]
+fn save_project_cloud_software(
+    project_path: String,
+    software: Option<ToolConfig>,
+    tool: Option<ToolConfig>,
+) -> Result<ProjectConfig, String> {
+    let t = software.or(tool).ok_or_else(|| "Missing software or tool payload".to_string())?;
+    save_project_tool(project_path, t)
+}
+
 fn get_fallback_credentials_file() -> Result<PathBuf, String> {
     if let Ok(statikor_home) = std::env::var("STATIKOR_HOME") {
         let dir = PathBuf::from(statikor_home);
@@ -617,6 +627,7 @@ fn update_and_save_forte_tool(
     updated_tool.forte_user_root_id = Some(root_id);
     updated_tool.project_file_tree_id = Some(file_id);
     updated_tool.file_id = Some(file_id);
+    updated_tool.token_expires_at = Some(now_ms + 86400 * 1000);
 
     if let Some(idx) = existing_idx {
         tools[idx] = updated_tool.clone();
@@ -643,13 +654,32 @@ fn init_forte_project_file(
     username: Option<String>,
 ) -> Result<ToolConfig, String> {
     let p = Path::new(&project_path);
-    let config = ensure_statikor_project(p)?;
-    let tools = config.tools.unwrap_or_default();
+    let mut config = ensure_statikor_project(p)?;
+    let mut tools = config.tools.unwrap_or_default();
 
     let existing_idx = tools.iter().position(|t| t.id == "forteweb");
     if let Some(idx) = existing_idx {
         if tools[idx].file_id.is_some() || tools[idx].project_file_tree_id.is_some() {
-            return Ok(tools[idx].clone());
+            let mut updated = tools[idx].clone();
+            updated.authenticated = true;
+            if username.is_some() {
+                updated.username = username;
+            }
+            let now_ms = {
+                use std::time::{SystemTime, UNIX_EPOCH};
+                SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as i64
+            };
+            updated.token_expires_at = Some(now_ms + 86400 * 1000);
+
+            tools[idx] = updated.clone();
+            config.tools = Some(tools);
+
+            let statikor_dir = p.join(".statikor");
+            let project_file = statikor_dir.join("project.json");
+            if let Ok(json_content) = serde_json::to_string_pretty(&config) {
+                let _ = fs::write(&project_file, json_content);
+            }
+            return Ok(updated);
         }
     }
 
@@ -1085,6 +1115,7 @@ fn main() {
             create_directory,
             delete_path,
             save_project_tool,
+            save_project_cloud_software,
             store_keychain_secret,
             get_keychain_secret,
             delete_keychain_secret,

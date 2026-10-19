@@ -89,11 +89,35 @@ export function parseAuthUrlParams(urlStr: string): { [key: string]: string } {
   return params;
 }
 
-interface BrowserAuthSuccessProps {
-  email: string;
+export function isDesktopAuthCallback(): boolean {
+  if (typeof window === 'undefined' || isTauri()) {
+    return false;
+  }
+  try {
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+
+    if (sessionStorage.getItem('statikor_browser_auth_handoff') === 'true') {
+      return true;
+    }
+
+    if (hash.includes('state=statikor_') || search.includes('state=statikor_')) {
+      return true;
+    }
+
+    if (hash.includes('access_token=') || hash.includes('id_token=')) {
+      return true;
+    }
+  } catch {}
+  return false;
 }
 
-export const BrowserAuthSuccess: React.FC<BrowserAuthSuccessProps> = ({ email }) => {
+interface BrowserAuthSuccessProps {
+  email?: string;
+  error?: string | null;
+}
+
+export const BrowserAuthSuccess: React.FC<BrowserAuthSuccessProps> = ({ email, error }) => {
   return (
     <div className="min-h-screen bg-[#03070d] flex items-center justify-center p-6 text-hud-text font-mono select-none">
       <div className="bg-[#050d18] border border-[#0e2236] rounded-xl p-8 max-w-md w-full text-center">
@@ -105,22 +129,42 @@ export const BrowserAuthSuccess: React.FC<BrowserAuthSuccessProps> = ({ email })
           </span>
         </div>
 
-        {/* Success Icon */}
-        <div className="w-12 h-12 bg-[#00f0ff]/10 border border-[#00f0ff]/20 text-[#00f0ff] rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-6 h-6 text-[#00f0ff]" />
-        </div>
+        {error ? (
+          <>
+            <div className="w-12 h-12 bg-[#ff0055]/10 border border-[#ff0055]/30 text-[#ff0055] rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-xl font-bold">✕</span>
+            </div>
 
-        <h1 className="text-base font-bold text-white mb-2 uppercase tracking-wide">
-          Authentication Complete
-        </h1>
-        
-        <p className="text-xs text-[#7e9bb4] mb-4 leading-relaxed font-sans">
-          Signed in as <span className="text-[#00f0ff] font-semibold font-mono">{email}</span>.
-        </p>
+            <h1 className="text-base font-bold text-white mb-2 uppercase tracking-wide">
+              Authentication Failed
+            </h1>
+
+            <p className="text-xs text-[#ff6699] mb-4 leading-relaxed font-sans">
+              {error}
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Success Icon */}
+            <div className="w-12 h-12 bg-[#00f0ff]/10 border border-[#00f0ff]/20 text-[#00f0ff] rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-6 h-6 text-[#00f0ff]" />
+            </div>
+
+            <h1 className="text-base font-bold text-white mb-2 uppercase tracking-wide">
+              Authentication Complete
+            </h1>
+
+            <p className="text-xs text-[#7e9bb4] mb-4 leading-relaxed font-sans">
+              Signed in as <span className="text-[#00f0ff] font-semibold font-mono">{email || 'User'}</span>.
+            </p>
+          </>
+        )}
 
         {/* Informational Return Prompt */}
-        <div className="bg-[#071322] border border-[#0e2236] rounded p-4 text-xs text-[#ccd8e4] leading-relaxed font-sans mb-2">
-          You may now close this tab and return to the Statikor desktop app.
+        <div className="bg-[#071322] border border-[#00f0ff]/30 rounded-xl p-5 text-center leading-relaxed font-sans mb-2 shadow-lg">
+          <p className="text-base sm:text-lg font-semibold text-white tracking-wide">
+            You may now close this tab and return to the Statikor desktop app.
+          </p>
         </div>
       </div>
     </div>
@@ -156,21 +200,89 @@ const Auth0Bridge: React.FC<Auth0BridgeProps> = ({ children, authError, onClearA
     return null;
   });
 
-  const [browserHandoffEmail, setBrowserHandoffEmail] = useState<string | null>(null);
+  const [browserHandoff, setBrowserHandoff] = useState<boolean>(() => {
+    const isCallback = isDesktopAuthCallback();
+    if (isCallback && typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('statikor_browser_auth_handoff', 'true');
+      } catch {}
+    }
+    return isCallback;
+  });
+
+  const [browserHandoffEmail, setBrowserHandoffEmail] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('statikor_browser_auth_email');
+        if (stored) return stored;
+
+        const hash = window.location.hash || '';
+        if (hash.includes('id_token=')) {
+          const match = hash.match(/id_token=([^&]+)/);
+          if (match && match[1]) {
+            const decoded = parseJwtPayload(match[1]);
+            if (decoded && (decoded.email || decoded.name)) {
+              const email = decoded.email || decoded.name;
+              sessionStorage.setItem('statikor_browser_auth_email', email);
+              return email;
+            }
+          }
+        }
+      } catch {}
+    }
+    return '';
+  });
+
+  const [browserHandoffError, setBrowserHandoffError] = useState<string | null>(() => {
+    if (typeof window !== 'undefined' && isDesktopAuthCallback()) {
+      try {
+        const search = window.location.search || '';
+        const hash = window.location.hash || '';
+        if (search.includes('error=') || hash.includes('error=')) {
+          const params = parseAuthUrlParams(window.location.href);
+          if (params.error || params.error_description) {
+            return `Auth0 Error: ${params.error_description || params.error}`;
+          }
+        }
+      } catch {}
+    }
+    return null;
+  });
 
   const handleDesktopAuthCallback = (callbackUrl: string) => {
     const params = parseAuthUrlParams(callbackUrl);
+    const state = params.state;
+
     if (params.error || params.error_description) {
       const msg = `Auth0 Error: ${params.error_description || params.error}`;
       console.error('[Auth0 Desktop]', msg);
       onSetAuthError(msg);
+
+      if (!isTauri()) {
+        setBrowserHandoffError(msg);
+        setBrowserHandoff(true);
+        const relayEndpoints = [
+          'http://127.0.0.1:41420/api/auth/relay',
+          'http://127.0.0.1:8000/api/auth/relay',
+        ];
+        if (state) {
+          relayEndpoints.push(`http://127.0.0.1:41420/api/auth/session/${state}`);
+          relayEndpoints.push(`http://127.0.0.1:8000/api/auth/session/${state}`);
+        }
+        relayEndpoints.forEach((url) => {
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: msg }),
+          }).catch(() => {});
+        });
+      }
       return;
     }
 
     const accessToken = params.access_token;
     const idToken = params.id_token;
     const expiresIn = params.expires_in ? parseInt(params.expires_in, 10) : 86400;
-    const state = params.state;
 
     if (accessToken) {
       let user = null;
@@ -192,7 +304,7 @@ const Auth0Bridge: React.FC<Auth0BridgeProps> = ({ children, authError, onClearA
         expiresAt: Date.now() + expiresIn * 1000,
       };
 
-      // In browser mode (Chrome), relay tokens to local sidecar and server for desktop consumption
+      // In browser mode, relay tokens to local sidecar and server for desktop consumption
       if (!isTauri()) {
         const payload = {
           accessToken,
@@ -218,13 +330,38 @@ const Auth0Bridge: React.FC<Auth0BridgeProps> = ({ children, authError, onClearA
           }).catch(() => {});
         });
 
-        setBrowserHandoffEmail(session.user?.email || session.user?.name || 'User');
+        const email = session.user?.email || session.user?.name || 'User';
+        setBrowserHandoffEmail(email);
+        setBrowserHandoff(true);
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem('statikor_browser_auth_email', email);
+            sessionStorage.setItem('statikor_browser_auth_handoff', 'true');
+          } catch {}
+        }
       }
 
       setDesktopSession(session);
       try {
         localStorage.setItem('statikor_desktop_auth', JSON.stringify(session));
       } catch {}
+    } else if (params.code && !isTauri()) {
+      setBrowserHandoff(true);
+      if (state) {
+        const relayEndpoints = [
+          'http://127.0.0.1:41420/api/auth/relay',
+          'http://127.0.0.1:8000/api/auth/relay',
+          `http://127.0.0.1:41420/api/auth/session/${state}`,
+          `http://127.0.0.1:8000/api/auth/session/${state}`,
+        ];
+        relayEndpoints.forEach((url) => {
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: params.code, state }),
+          }).catch(() => {});
+        });
+      }
     }
   };
 
@@ -256,11 +393,27 @@ const Auth0Bridge: React.FC<Auth0BridgeProps> = ({ children, authError, onClearA
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
-      handleDesktopAuthCallback(window.location.href);
-      window.history.replaceState({}, document.title, window.location.pathname);
+    if (typeof window !== 'undefined' && !isTauri()) {
+      if (window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('id_token'))) {
+        handleDesktopAuthCallback(window.location.href);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (window.location.search && (window.location.search.includes('code=') || window.location.search.includes('state=statikor_'))) {
+        handleDesktopAuthCallback(window.location.href);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (!isTauri() && browserHandoff && auth0?.user?.email) {
+      setBrowserHandoffEmail(auth0.user.email);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('statikor_browser_auth_email', auth0.user.email);
+        } catch {}
+      }
+    }
+  }, [auth0?.user?.email, browserHandoff]);
 
   const checkDesktopSessionOnce = async (stateId: string = 'latest'): Promise<boolean> => {
     const candidateUrls = [
@@ -425,8 +578,8 @@ const Auth0Bridge: React.FC<Auth0BridgeProps> = ({ children, authError, onClearA
     ]
   );
 
-  if (browserHandoffEmail && !isTauri()) {
-    return <BrowserAuthSuccess email={browserHandoffEmail} />;
+  if (!isTauri() && browserHandoff) {
+    return <BrowserAuthSuccess email={browserHandoffEmail || 'User'} error={browserHandoffError} />;
   }
 
   return (

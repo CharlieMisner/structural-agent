@@ -104,8 +104,20 @@ def init_forte_project_file(
             forte_software = s
             break
 
-    # If already has fileId, return existing immediately
+    # If already has fileId, update auth info and return existing
     if forte_software and (forte_software.get("fileId") or forte_software.get("projectFileTreeId")):
+        forte_software["authenticated"] = True
+        if username:
+            forte_software["username"] = username
+        import time
+        forte_software["tokenExpiresAt"] = int(time.time() * 1000) + 86400 * 1000
+
+        from server.dtos.project import CloudSoftwareConfigModel
+        from server.services.project import save_project_cloud_software
+        try:
+            save_project_cloud_software(project_path, CloudSoftwareConfigModel(**forte_software))
+        except Exception:
+            pass
         return forte_software
 
     # 2. Retrieve token if not provided
