@@ -10,6 +10,7 @@
   <meta property="og:title" content="Statikor — Structural Engineering AI">
   <meta property="og:description" content="Structural engineering AI that meets you where you work.">
   <meta property="og:image" content="/static/logo.png">
+  <script>document.documentElement.classList.add('js');</script>
   
   <style>
     :root {
@@ -120,6 +121,12 @@
       transition: color 0.15s ease;
     }
 
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+    }
+
     .header-actions {
       display: flex;
       align-items: center;
@@ -208,7 +215,7 @@
 
     .hero-title {
       font-size: clamp(2.3rem, 5.5vw, 4.2rem);
-      font-weight: 800;
+      font-weight: 500;
       line-height: 1.15;
       letter-spacing: -0.025em;
       color: #ffffff;
@@ -216,8 +223,16 @@
       margin: 0 auto 1.5rem;
     }
 
+    .hero-title-small {
+      font-size: 75%;
+      font-weight: 200;
+
+      color: var(--text-muted);
+    }
+
     .cyan-gradient {
       background: linear-gradient(135deg, #00f0ff 20%, #38bdf8 80%);
+      font-weight: 800;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       display: inline-block;
@@ -296,7 +311,7 @@
     }
 
     .os-meta {
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       color: #64829d;
       font-family: var(--font-mono);
       display: flex;
@@ -304,8 +319,14 @@
       gap: 0.5rem;
     }
 
-    .os-meta span {
-      color: var(--text-muted);
+    .os-meta a {
+      color: #8daec9;
+      text-decoration: underline;
+      transition: color 0.15s ease;
+    }
+
+    .os-meta a:hover {
+      color: var(--cyan);
     }
 
     /* Client Desktop HUD Preview Window */
@@ -566,110 +587,488 @@
       font-size: 1.05rem;
     }
 
-    /* Grid cards */
-    .integrations-grid {
+    /* Three Pillars Section: 3-Row Layout */
+    /* Three Pillars Section: 3-Row Layout with unified box for graphic + text */
+    .pillars-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    .pillar-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: 1fr 1fr;
+      gap: 3.5rem;
+      align-items: center;
+      position: relative;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    /* Scroll Reveal Fade-in for Capability Cards */
+    .js .pillar-row {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.25s ease,
+                  box-shadow 0.25s ease;
+      will-change: opacity, transform;
+    }
+
+    .js .pillar-row.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .js .pillar-row {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+    }
+
+    .pillar-row:hover {
+      border-color: var(--cyan-border);
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 240, 255, 0.08);
+    }
+
+    @media (max-width: 960px) {
+      .pillar-row {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 1.75rem;
+      }
+
+      .pillar-info {
+        order: 1;
+      }
+
+      .pillar-visual {
+        order: 2;
+      }
+    }
+
+    /* Visual Container inside card box */
+    .pillar-visual {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 240px;
+      width: 100%;
+    }
+
+    .visual-svg {
+      width: 100%;
+      height: auto;
+      max-height: 250px;
+      display: block;
+    }
+
+    /* Info Panel inside card box */
+    .pillar-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      padding: 0;
+      box-shadow: none;
+      position: relative;
+    }
+
+    .pillar-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 4px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--cyan-border);
+      color: var(--cyan);
+      margin-bottom: 0.85rem;
+      width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .pillar-title {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.9rem;
+      line-height: 1.25;
+    }
+
+    .pillar-body {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 1.4rem;
+    }
+
+    .pillar-software-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .software-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 6px;
+      background: #081729;
+      border: 1px solid #163654;
+      color: #9ebdd6;
+    }
+
+    .software-chip span {
+      color: var(--cyan);
+    }
+
+    /* Graphic 1: Light Frame Timber Framing Drawing Keyframes - Starts on Scroll */
+    .anim-timber-grid {
+      stroke-dasharray: 320;
+    }
+    .anim-timber-joist {
+      stroke-dasharray: 85;
+    }
+
+    .js .anim-timber-grid {
+      stroke-dashoffset: 320;
+      opacity: 0;
+    }
+    .js .anim-timber-joist {
+      stroke-dashoffset: 85;
+      opacity: 0;
+    }
+    .js .anim-timber-tag {
+      opacity: 0;
+    }
+
+    .pillar-row.is-visible .anim-timber-grid {
+      animation: drawTimberGrid 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    .pillar-row.is-visible .anim-timber-joist {
+      animation: drawTimberJoist 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    .pillar-row.is-visible .anim-timber-tag {
+      animation: popTimberTag 7s ease-out infinite;
+    }
+
+    :not(.js) .anim-timber-grid {
+      animation: drawTimberGrid 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    :not(.js) .anim-timber-joist {
+      animation: drawTimberJoist 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    :not(.js) .anim-timber-tag {
+      animation: popTimberTag 7s ease-out infinite;
+    }
+
+    @keyframes drawTimberGrid {
+      0% { stroke-dashoffset: 320; opacity: 0; }
+      12%, 88% { stroke-dashoffset: 0; opacity: 1; }
+      96%, 100% { stroke-dashoffset: 320; opacity: 0; }
+    }
+    @keyframes drawTimberJoist {
+      0%, 15% { stroke-dashoffset: 85; opacity: 0; }
+      40%, 88% { stroke-dashoffset: 0; opacity: 1; }
+      96%, 100% { stroke-dashoffset: 85; opacity: 0; }
+    }
+    @keyframes popTimberTag {
+      0%, 42% { opacity: 0; transform: translateY(4px); }
+      52%, 88% { opacity: 1; transform: translateY(0); }
+      96%, 100% { opacity: 0; }
+    }
+
+    /* Graphic 2: Calculations Numbers, D/C Ratio & Animated Drawn Green Checks with Animated Green Circles */
+    .calc-clean-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.6rem;
+      width: 100%;
+      max-width: 360px;
+      padding: 0.5rem 0;
+    }
+
+    .calc-clean-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 1.25rem;
+    }
+
+    .calc-text-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .calc-math-sym {
+      font-family: var(--font-mono);
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.03em;
+      line-height: 1.1;
+    }
+
+    .calc-sub-vals {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #8daec9;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .calc-dc-badge {
+      color: var(--cyan);
+      font-size: 0.75rem;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+    }
+
+    .calc-check-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .calc-draw-check {
+      width: 34px;
+      height: 34px;
+      flex-shrink: 0;
+      overflow: visible;
+    }
+
+    /* Complete green circle around check: animated stroke-draw around perimeter */
+    .check-circle-path {
+      stroke: #2ed573;
+      stroke-width: 3;
+      fill: rgba(46, 213, 115, 0.08);
+      transform-origin: 20px 20px;
+      transform: rotate(-90deg);
+      stroke-dasharray: 101;
+    }
+
+    .check-draw-path {
+      stroke-dasharray: 26;
+    }
+
+    .js .calc-text-block {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    .js .check-circle-path {
+      stroke-dashoffset: 101;
+      opacity: 0;
+      fill-opacity: 0;
+    }
+
+    .js .check-draw-path {
+      stroke-dashoffset: 26;
+      opacity: 0;
+    }
+
+    /* Sequential Alternating Animation: Calc 1 -> Check 1 -> Calc 2 -> Check 2 -> Calc 3 -> Check 3 */
+    .pillar-row.is-visible .calc-text-1 { animation: fadeInCalc1 6.5s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+    .pillar-row.is-visible .check-circle-path.circ-1 { animation: drawCircleAnim1 6.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    .pillar-row.is-visible .check-draw-path.chk-1   { animation: drawCheckAnim1 6.5s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+
+    .pillar-row.is-visible .calc-text-2 { animation: fadeInCalc2 6.5s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+    .pillar-row.is-visible .check-circle-path.circ-2 { animation: drawCircleAnim2 6.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    .pillar-row.is-visible .check-draw-path.chk-2   { animation: drawCheckAnim2 6.5s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+
+    .pillar-row.is-visible .calc-text-3 { animation: fadeInCalc3 6.5s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+    .pillar-row.is-visible .check-circle-path.circ-3 { animation: drawCircleAnim3 6.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    .pillar-row.is-visible .check-draw-path.chk-3   { animation: drawCheckAnim3 6.5s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+
+    :not(.js) .calc-text-block {
+      opacity: 1;
+      transform: none;
+    }
+    :not(.js) .check-circle-path {
+      stroke-dashoffset: 0;
+      opacity: 1;
+      fill-opacity: 1;
+    }
+    :not(.js) .check-draw-path {
+      stroke-dashoffset: 0;
+      opacity: 1;
+    }
+
+    @keyframes fadeInCalc1 {
+      0% { opacity: 0; transform: translateY(6px); }
+      4%, 88% { opacity: 1; transform: translateY(0); }
+      94%, 100% { opacity: 0; transform: translateY(6px); }
+    }
+
+    @keyframes drawCircleAnim1 {
+      0%, 7% { stroke-dashoffset: 101; opacity: 0; fill-opacity: 0; }
+      8% { opacity: 1; }
+      16%, 88% { stroke-dashoffset: 0; opacity: 1; fill-opacity: 1; }
+      94%, 100% { stroke-dashoffset: 101; opacity: 0; fill-opacity: 0; }
+    }
+
+    @keyframes drawCheckAnim1 {
+      0%, 14% { stroke-dashoffset: 26; opacity: 0; }
+      15% { opacity: 1; }
+      22%, 88% { stroke-dashoffset: 0; opacity: 1; }
+      94%, 100% { stroke-dashoffset: 26; opacity: 0; }
+    }
+
+    @keyframes fadeInCalc2 {
+      0%, 25% { opacity: 0; transform: translateY(6px); }
+      29%, 88% { opacity: 1; transform: translateY(0); }
+      94%, 100% { opacity: 0; transform: translateY(6px); }
+    }
+
+    @keyframes drawCircleAnim2 {
+      0%, 33% { stroke-dashoffset: 101; opacity: 0; fill-opacity: 0; }
+      34% { opacity: 1; }
+      42%, 88% { stroke-dashoffset: 0; opacity: 1; fill-opacity: 1; }
+      94%, 100% { stroke-dashoffset: 101; opacity: 0; fill-opacity: 0; }
+    }
+
+    @keyframes drawCheckAnim2 {
+      0%, 40% { stroke-dashoffset: 26; opacity: 0; }
+      41% { opacity: 1; }
+      48%, 88% { stroke-dashoffset: 0; opacity: 1; }
+      94%, 100% { stroke-dashoffset: 26; opacity: 0; }
+    }
+
+    @keyframes fadeInCalc3 {
+      0%, 51% { opacity: 0; transform: translateY(6px); }
+      55%, 88% { opacity: 1; transform: translateY(0); }
+      94%, 100% { opacity: 0; transform: translateY(6px); }
+    }
+
+    @keyframes drawCircleAnim3 {
+      0%, 59% { stroke-dashoffset: 101; opacity: 0; fill-opacity: 0; }
+      60% { opacity: 1; }
+      68%, 88% { stroke-dashoffset: 0; opacity: 1; fill-opacity: 1; }
+      94%, 100% { stroke-dashoffset: 101; opacity: 0; fill-opacity: 0; }
+    }
+
+    @keyframes drawCheckAnim3 {
+      0%, 66% { stroke-dashoffset: 26; opacity: 0; }
+      67% { opacity: 1; }
+      74%, 88% { stroke-dashoffset: 0; opacity: 1; }
+      94%, 100% { stroke-dashoffset: 26; opacity: 0; }
+    }
+
+    /* Software Integrations Grid */
+    .software-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 1.5rem;
     }
 
-    .card {
-      background: var(--bg);
+    .software-card {
+      background: rgba(6, 15, 26, 0.7);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.75rem;
+      border-radius: 12px;
+      padding: 1.5rem 1.6rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
     }
 
-    .card:hover {
+    .software-card:hover {
       border-color: var(--cyan-border);
-      transform: translateY(-3px);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.08);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.08);
+      transform: translateY(-2px);
     }
 
-    .card-icon-wrap {
-      width: 44px;
-      height: 44px;
-      border-radius: 8px;
-      background: rgba(0, 240, 255, 0.08);
-      border: 1px solid var(--cyan-border);
+    .software-card-top {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--cyan);
-      margin-bottom: 1.25rem;
-      font-family: var(--font-mono);
-      font-weight: 700;
-      font-size: 1.1rem;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.85rem;
     }
 
-    .card-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 0.65rem;
-    }
-
-    .card-body {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 1.25rem;
-    }
-
-    .card-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      padding: 0.2rem 0.55rem;
-      border-radius: 4px;
-      background: #091728;
-      border: 1px solid #163654;
-      color: #8daec9;
-    }
-
-    /* Capabilities / Features */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 2rem;
-    }
-
-    .feature-item {
+    .software-card-title-group {
       display: flex;
-      gap: 1.25rem;
+      flex-direction: column;
+      gap: 0.2rem;
     }
 
-    .feature-bullet {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: rgba(0, 240, 255, 0.1);
-      border: 1px solid var(--cyan-border);
-      color: var(--cyan);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-mono);
-      font-weight: 700;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .feature-title {
+    .software-card-name {
       font-size: 1.15rem;
       font-weight: 700;
       color: #ffffff;
-      margin-bottom: 0.45rem;
+      line-height: 1.2;
     }
 
-    .feature-desc {
-      font-size: 0.9rem;
+    .software-card-category {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .software-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .software-badge.live {
+      background: rgba(46, 213, 115, 0.12);
+      border: 1px solid rgba(46, 213, 115, 0.35);
+      color: #2ed573;
+    }
+
+    .software-badge.live .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #2ed573;
+      box-shadow: 0 0 8px #2ed573;
+    }
+
+    .software-badge.soon {
+      background: rgba(148, 163, 184, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      color: #94a3b8;
+    }
+
+    .software-card-desc {
+      font-size: 0.88rem;
       color: var(--text-muted);
-      line-height: 1.6;
+      line-height: 1.65;
+      margin: 0;
     }
 
     /* Download Banner */
@@ -744,16 +1143,12 @@
     </a>
 
     <nav class="nav-links">
-      <a href="#integrations">Drafting, Calcs & Analysis</a>
-      <a href="#capabilities">Engineering Capabilities</a>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#integrations">Integrations</a>
       <a href="#workflow">Download</a>
     </nav>
 
     <div class="header-actions">
-      <div class="status-pill">
-        <span class="status-dot"></span>
-        <span>DESKTOP ASSISTANT</span>
-      </div>
       <a href="/download/latest" id="nav-download-btn" class="btn-download-sm">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <span>Download</span>
@@ -764,16 +1159,15 @@
   <!-- Hero Section -->
   <section class="hero">
     <div class="container">
-      <div class="badge-pill">
-        <span>★ Direct Member Sizing & Plan Coordination</span>
-      </div>
 
       <h1 class="hero-title">
-        Structural engineering AI that <span class="cyan-gradient">meets you where you work.</span>
+        <div>Structural Engineering AI</div>
+        <div class="hero-title-small">that meets you</div> 
+        <div class="cyan-gradient">where you already work.</div>
       </h1>
 
       <p class="hero-subtitle">
-        Stop re-entering numbers between calculation sheets and models. Statikor automates member sizing in Forte, syncs structural framing in Revit, and generates code-compliant design packages—directly from your engineering workspace.
+        An AI agent that understands structural engineering and drives the software you already use.
       </p>
 
       <div class="hero-cta">
@@ -782,19 +1176,10 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span id="primary-btn-label">Download for Windows (.exe)</span>
           </a>
-
-          <a href="#integrations" class="btn-secondary">
-            <span>Explore Workflow</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </a>
         </div>
 
         <div class="os-meta">
-          <span id="os-detected-text">Detected: Windows 64-bit</span>
-          <span>•</span>
-          <a href="/download/windows" style="text-decoration: underline; color: #8daec9;">Windows (.exe)</a>
-          <span>•</span>
-          <a href="/download/mac" style="text-decoration: underline; color: #8daec9;">macOS (.dmg)</a>
+          <a href="/download/mac" id="hero-other-link">Download for macOS (.dmg)</a>
         </div>
       </div>
 
@@ -881,120 +1266,679 @@
   </section>
 
   <!-- Three Pillars Section: Drafting & Modeling, Calculations, Analysis -->
-  <section id="integrations" class="section">
+  <section id="capabilities" class="section">
     <div class="container">
       <div class="section-header">
         <div class="section-tag">Integrated Engineering Workflow</div>
         <h2 class="section-title">Drafting, Calculations, and Analysis in Lockstep</h2>
         <p class="section-subtitle">
-          Statikor bridges the three core pillars of structural engineering practice—eliminating manual data re-entry and plan check discrepancies.
+          Statikor can read your CAD and BIM files, build analytical models, then populate and run your calculations. Statikor automates the boring stuff, freeing you up to solve the complex problems and take care of your customers.
         </p>
       </div>
 
-      <div class="integrations-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-        <!-- 1. Drafting and Modeling -->
-        <div class="card">
-          <div class="card-icon-wrap">📐</div>
-          <h3 class="card-title">Drafting & Modeling</h3>
-          <p class="card-body">
-            The AI reads and reasons directly about your AutoCAD files and Revit models to identify framing incongruities, broken load paths, and mismatched callouts before plan check. Automatically applies updates, synchronizes beam tags, and keeps framing schedules aligned with your latest designs.
-          </p>
-          <div class="card-badge">AutoCAD & Autodesk Revit</div>
+      <div class="pillars-container">
+        <!-- ROW 1: DRAFTING & MODELING (Text on Left, Residential Light Frame Timber Plan Graphic on Right) -->
+        <div class="pillar-row">
+          <div class="pillar-info">
+            <h3 class="pillar-title">Drafting & Modeling</h3>
+            <p class="pillar-body">
+              The AI reads and reasons directly about your AutoCAD files and Revit models to identify framing incongruities, broken load paths, and mismatched callouts before plan check. Automatically applies updates, synchronizes beam tags, and keeps framing schedules aligned with your latest designs.
+            </p>
+            <div class="pillar-software-chips">
+              <div class="software-chip"><span>●</span> Revit</div>
+              <div class="software-chip"><span>●</span> AutoCAD</div>
+            </div>
+          </div>
+
+          <div class="pillar-visual">
+            <svg class="visual-svg" viewBox="0 0 460 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="resCadGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0, 240, 255, 0.03)" stroke-width="1"/>
+                </pattern>
+                <marker id="spanArrowUp" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto">
+                  <path d="M 3 0 L 6 6 L 0 6 Z" fill="#00f0ff" />
+                </marker>
+                <marker id="spanArrowDown" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto">
+                  <path d="M 0 0 L 6 0 L 3 6 Z" fill="#00f0ff" />
+                </marker>
+              </defs>
+              
+              <rect width="100%" height="100%" fill="url(#resCadGrid)" />
+
+              <!-- Subtle Structural Gridlines (1-4 and A-C) -->
+              <g class="anim-timber-grid" stroke="#193856" stroke-width="1" stroke-dasharray="3,3">
+                <!-- Vertical -->
+                <line x1="60" y1="24" x2="60" y2="230" />
+                <line x1="160" y1="24" x2="160" y2="230" />
+                <line x1="280" y1="24" x2="280" y2="230" />
+                <line x1="390" y1="24" x2="390" y2="230" />
+                <!-- Horizontal -->
+                <line x1="36" y1="38" x2="415" y2="38" />
+                <line x1="36" y1="124" x2="415" y2="124" />
+                <line x1="36" y1="212" x2="415" y2="212" />
+              </g>
+
+              <!-- Grid Bubbles -->
+              <g class="anim-timber-grid">
+                <circle cx="60" cy="18" r="9" fill="#030812" stroke="#38bdf8" stroke-width="1" />
+                <text x="60" y="21.5" fill="#38bdf8" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle">1</text>
+                <circle cx="160" cy="18" r="9" fill="#030812" stroke="#38bdf8" stroke-width="1" />
+                <text x="160" y="21.5" fill="#38bdf8" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle">2</text>
+                <circle cx="280" cy="18" r="9" fill="#030812" stroke="#38bdf8" stroke-width="1" />
+                <text x="280" y="21.5" fill="#38bdf8" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle">3</text>
+                <circle cx="390" cy="18" r="9" fill="#030812" stroke="#38bdf8" stroke-width="1" />
+                <text x="390" y="21.5" fill="#38bdf8" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle">4</text>
+
+                <circle cx="24" cy="38" r="9" fill="#030812" stroke="#38bdf8" stroke-width="1" />
+                <text x="24" y="41.5" fill="#38bdf8" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle">A</text>
+                <circle cx="24" cy="124" r="9" fill="#030812" stroke="#38bdf8" stroke-width="1" />
+                <text x="24" y="127.5" fill="#38bdf8" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle">B</text>
+                <circle cx="24" cy="212" r="9" fill="#030812" stroke="#38bdf8" stroke-width="1" />
+                <text x="24" y="215.5" fill="#38bdf8" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle">C</text>
+              </g>
+
+              <!-- Residential Floor Plan Walls: Double Lines (Uniform Line Weight 1.3px) -->
+              <g stroke="#647d96" stroke-width="1.3" stroke-linecap="square" stroke-linejoin="miter">
+                <!-- North Exterior Wall (Outer y=38, Inner y=44) -->
+                <line x1="60" y1="38" x2="200" y2="38" />
+                <line x1="66" y1="44" x2="200" y2="44" />
+                <line x1="200" y1="38" x2="200" y2="44" /> <!-- Jamb Cap -->
+
+                <line x1="232" y1="38" x2="330" y2="38" />
+                <line x1="232" y1="44" x2="326" y2="44" />
+                <line x1="232" y1="38" x2="232" y2="44" /> <!-- Jamb Cap -->
+
+                <!-- 45-Degree Angled Bay Wall -->
+                <line x1="330" y1="38" x2="390" y2="98" />
+                <line x1="326" y1="44" x2="384" y2="104" />
+
+                <!-- East Exterior Wall (Outer x=390, Inner x=384) -->
+                <line x1="390" y1="98" x2="390" y2="212" />
+                <line x1="384" y1="104" x2="384" y2="206" />
+
+                <!-- South Exterior Wall: East Segment -->
+                <line x1="390" y1="212" x2="245" y2="212" />
+                <line x1="384" y1="206" x2="251" y2="206" />
+
+                <!-- Covered Porch Step-Back (East Edge of Porch) -->
+                <line x1="245" y1="212" x2="245" y2="186" />
+                <line x1="251" y1="206" x2="251" y2="186" />
+
+                <!-- Porch Back Wall (North Wall of Porch, Outer y=186, Inner y=180) -->
+                <line x1="245" y1="186" x2="224" y2="186" />
+                <line x1="251" y1="180" x2="224" y2="180" />
+                <line x1="224" y1="180" x2="224" y2="186" /> <!-- Jamb Cap -->
+
+                <line x1="198" y1="186" x2="185" y2="186" />
+                <line x1="198" y1="180" x2="179" y2="180" />
+                <line x1="198" y1="180" x2="198" y2="186" /> <!-- Jamb Cap -->
+
+                <!-- Covered Porch Step-Out (West Edge of Porch) -->
+                <line x1="185" y1="186" x2="185" y2="212" />
+                <line x1="179" y1="180" x2="179" y2="206" />
+
+                <!-- South Exterior Wall: West Segment -->
+                <line x1="185" y1="212" x2="60" y2="212" />
+                <line x1="179" y1="206" x2="66" y2="206" />
+
+                <!-- West Exterior Wall (Outer x=60, Inner x=66) -->
+                <line x1="60" y1="212" x2="60" y2="38" />
+                <line x1="66" y1="206" x2="66" y2="44" />
+
+                <!-- Interior Demising Wall at Grid 2 (x=158 to 164) -->
+                <!-- North Segment (Bedroom Wing demising) -->
+                <line x1="158" y1="44" x2="158" y2="118" />
+                <line x1="164" y1="44" x2="164" y2="118" />
+                <line x1="158" y1="118" x2="164" y2="118" /> <!-- Jamb Cap -->
+
+                <!-- South Segment (Hallway / Bedroom 2 demising) -->
+                <line x1="158" y1="142" x2="158" y2="180" />
+                <line x1="164" y1="142" x2="164" y2="180" />
+                <line x1="158" y1="142" x2="164" y2="142" /> <!-- Jamb Cap -->
+
+                <!-- Primary Bedroom South Wall (y=120 to 126) -->
+                <line x1="66" y1="120" x2="132" y2="120" />
+                <line x1="66" y1="126" x2="132" y2="126" />
+                <line x1="132" y1="120" x2="132" y2="126" /> <!-- Jamb Cap -->
+
+                <line x1="152" y1="120" x2="158" y2="120" />
+                <line x1="152" y1="126" x2="158" y2="126" />
+                <line x1="152" y1="120" x2="152" y2="126" /> <!-- Jamb Cap -->
+
+                <!-- Bath / Bedroom 2 Partition Wall (x=108 to 114) -->
+                <line x1="108" y1="126" x2="108" y2="136" />
+                <line x1="114" y1="126" x2="114" y2="136" />
+                <line x1="108" y1="136" x2="114" y2="136" /> <!-- Jamb Cap -->
+
+                <line x1="108" y1="158" x2="108" y2="206" />
+                <line x1="114" y1="158" x2="114" y2="206" />
+                <line x1="108" y1="158" x2="114" y2="158" /> <!-- Jamb Cap -->
+
+                <!-- Kitchen/Dining Partition Wall at East (y=121 to 127) -->
+                <line x1="324" y1="121" x2="384" y2="121" />
+                <line x1="324" y1="127" x2="384" y2="127" />
+                <line x1="324" y1="121" x2="324" y2="127" /> <!-- Jamb Cap -->
+              </g>
+
+              <!-- Residential Door Leaves & Swing Arcs -->
+              <!-- 1. Front Entry Door (swings inward to Foyer) -->
+              <line x1="198" y1="180" x2="198" y2="156" stroke="#647d96" stroke-width="1.4" />
+              <path d="M 198 156 A 24 24 0 0 1 222 180" fill="none" stroke="#45617a" stroke-width="1" stroke-dasharray="2,2" />
+
+              <!-- 2. Rear Patio Sliding Glass Door -->
+              <line x1="200" y1="40" x2="218" y2="40" stroke="#647d96" stroke-width="1.8" />
+              <line x1="214" y1="42.5" x2="232" y2="42.5" stroke="#647d96" stroke-width="1.8" />
+
+              <!-- 3. Primary Bedroom Door (swings inward) -->
+              <line x1="132" y1="120" x2="132" y2="100" stroke="#647d96" stroke-width="1.4" />
+              <path d="M 132 100 A 20 20 0 0 1 152 120" fill="none" stroke="#45617a" stroke-width="1" stroke-dasharray="2,2" />
+
+              <!-- 4. Bath Door (swings inward) -->
+              <line x1="108" y1="136" x2="90" y2="136" stroke="#647d96" stroke-width="1.4" />
+              <path d="M 90 136 A 18 18 0 0 1 108 154" fill="none" stroke="#45617a" stroke-width="1" stroke-dasharray="2,2" />
+
+              <!-- Flush Girder & Porch Header Beams -->
+              <!-- Great Room Flush LVL Girder on Grid B -->
+              <line x1="164" y1="121" x2="278" y2="121" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="4,2" />
+              <line x1="164" y1="127" x2="278" y2="127" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="4,2" />
+
+              <!-- Covered Porch Header Beam -->
+              <line x1="185" y1="212" x2="245" y2="212" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="3,2" />
+
+              <!-- Structurally Placed Posts with 'X' (Post width matches wall thickness: 6px x 6px) -->
+              <!-- 1. Interior Post: Point Load Support for Flush LVL Girder at Open Great Room -->
+              <g stroke="#7895af" stroke-width="1" fill="#03070d">
+                <rect x="278" y="121" width="6" height="6" />
+                <line x1="278" y1="121" x2="284" y2="127" />
+                <line x1="278" y1="127" x2="284" y2="121" />
+              </g>
+              <text x="281" y="115" fill="#63829e" font-family="monospace" font-size="6" font-weight="600" text-anchor="middle">POST</text>
+
+              <!-- 2. Exterior Post: Corner Support for Covered Front Entry Porch Beam -->
+              <g stroke="#7895af" stroke-width="1" fill="#03070d">
+                <rect x="245" y="206" width="6" height="6" />
+                <line x1="245" y1="206" x2="251" y2="212" />
+                <line x1="245" y1="212" x2="251" y2="206" />
+              </g>
+              <text x="248" y="224" fill="#63829e" font-family="monospace" font-size="6" font-weight="600" text-anchor="middle">POST</text>
+
+              <!-- Room Labels in Gray per Architectural Standards -->
+              <g fill="#63829e" font-family="monospace" font-size="7.5" font-weight="700" letter-spacing="0.08em" text-anchor="middle">
+                <text x="110" y="66">PRIMARY BEDROOM</text>
+                <text x="88" y="176">BATH</text>
+                <text x="136" y="176">BEDROOM 2</text>
+                <text x="220" y="66">GREAT ROOM</text>
+                <text x="340" y="148">KITCHEN / DINING</text>
+                <text x="212" y="150">FOYER</text>
+                <text x="212" y="202" font-size="6.5" fill="#506f8c">COVERED PORCH</text>
+              </g>
+
+              <!-- Floor Joists in Signature Blue (Drawn 6-8px short of walls) -->
+              <g class="anim-timber-joist" stroke="#00f0ff" stroke-width="1.5" stroke-linecap="round">
+                <!-- Upper Bay: Primary Bedroom -->
+                <line x1="80" y1="52" x2="80" y2="112" />
+                <line x1="96" y1="52" x2="96" y2="112" />
+                <line x1="112" y1="52" x2="112" y2="112" />
+                <line x1="128" y1="52" x2="128" y2="112" />
+                <line x1="144" y1="52" x2="144" y2="112" />
+
+                <!-- Upper Bay: Great Room -->
+                <line x1="176" y1="52" x2="176" y2="114" />
+                <line x1="194" y1="52" x2="194" y2="114" />
+                <line x1="212" y1="52" x2="212" y2="114" />
+                <line x1="230" y1="52" x2="230" y2="114" />
+                <line x1="248" y1="52" x2="248" y2="114" />
+                <line x1="266" y1="52" x2="266" y2="114" />
+
+                <!-- Upper Bay: Kitchen / Dining (stopping clear of 45-degree angled wall) -->
+                <line x1="295" y1="52" x2="295" y2="114" />
+                <line x1="315" y1="52" x2="315" y2="114" />
+                <line x1="336" y1="56" x2="336" y2="114" />
+                <line x1="356" y1="76" x2="356" y2="114" />
+                <line x1="374" y1="96" x2="374" y2="114" />
+
+                <!-- Lower Bay: Bath -->
+                <line x1="80" y1="134" x2="80" y2="198" />
+                <line x1="96" y1="134" x2="96" y2="198" />
+
+                <!-- Lower Bay: Bedroom 2 -->
+                <line x1="126" y1="134" x2="126" y2="198" />
+                <line x1="144" y1="134" x2="144" y2="198" />
+
+                <!-- Lower Bay: Foyer -->
+                <line x1="176" y1="144" x2="176" y2="172" />
+
+                <!-- Lower Bay: Kitchen / Dining -->
+                <line x1="295" y1="134" x2="295" y2="198" />
+                <line x1="315" y1="134" x2="315" y2="198" />
+                <line x1="335" y1="134" x2="335" y2="198" />
+                <line x1="355" y1="134" x2="355" y2="198" />
+                <line x1="374" y1="134" x2="374" y2="198" />
+              </g>
+
+              <!-- Joist & Framing Labels in Signature Cyan & Blue -->
+              <g class="anim-timber-tag">
+                <!-- Upper Bay Great Room Joist Callout -->
+                <line x1="220" y1="72" x2="220" y2="108" stroke="#00f0ff" stroke-width="1.2" marker-start="url(#spanArrowUp)" marker-end="url(#spanArrowDown)" />
+                <rect x="176" y="82" width="88" height="15" rx="2" fill="#03070d" stroke="#00f0ff" stroke-width="0.9" />
+                <text x="220" y="92.5" fill="#00f0ff" font-family="monospace" font-size="8" font-weight="600" text-anchor="middle">2x10 @ 16" O.C.</text>
+
+                <!-- Lower Bay Joist Callout -->
+                <line x1="335" y1="154" x2="335" y2="190" stroke="#00f0ff" stroke-width="1.2" marker-start="url(#spanArrowUp)" marker-end="url(#spanArrowDown)" />
+                <rect x="291" y="164" width="88" height="15" rx="2" fill="#03070d" stroke="#00f0ff" stroke-width="0.9" />
+                <text x="335" y="174.5" fill="#00f0ff" font-family="monospace" font-size="8" font-weight="600" text-anchor="middle">2x10 @ 16" O.C.</text>
+
+                <!-- Center Flush Girder Tag -->
+                <rect x="168" y="129" width="104" height="14" rx="2" fill="#03070d" stroke="#38bdf8" stroke-width="0.8" />
+                <text x="220" y="139.5" fill="#38bdf8" font-family="monospace" font-size="7.5" text-anchor="middle">(3) 1-3/4"x11-7/8" LVL</text>
+
+                <!-- 45-Degree Angled Header Tag -->
+                <rect x="323" y="52" width="76" height="13" rx="2" fill="#03070d" stroke="#38bdf8" stroke-width="0.8" transform="rotate(45 361 58)" />
+                <text x="361" y="61" fill="#38bdf8" font-family="monospace" font-size="7" text-anchor="middle" transform="rotate(45 361 58)">(2) 2x10 Header</text>
+
+                <!-- Porch Header Tag -->
+                <rect x="190" y="206" width="44" height="12" rx="2" fill="#03070d" stroke="#38bdf8" stroke-width="0.7" />
+                <text x="212" y="215" fill="#38bdf8" font-family="monospace" font-size="6.5" text-anchor="middle">PORCH HDR</text>
+              </g>
+            </svg>
+          </div>
         </div>
 
-        <!-- 2. Calculations -->
-        <div class="card">
-          <div class="card-icon-wrap">⚡</div>
-          <h3 class="card-title">Calculations</h3>
-          <p class="card-body">
-            Never re-enter numbers by hand. Statikor pulls spans, tributary areas, and framing geometries directly from your models and drawings to automatically populate Weyerhaeuser ForteWEB and Enercalc. Runs member sizing for joists, glulams, LVL, and headers with verified code compliance.
-          </p>
-          <div class="card-badge">ForteWEB & Enercalc</div>
+        <!-- ROW 2: CALCULATIONS (Text on Left, Calculation Checks Graphic on Right) -->
+        <div class="pillar-row">
+          <div class="pillar-info">
+            <h3 class="pillar-title">Calculations</h3>
+            <p class="pillar-body">
+              Never re-enter numbers by hand. Statikor pulls spans, tributary areas, and framing geometries directly from your models and drawings to automatically enter data for calculations into Weyerhaeuser ForteWEB and Enercalc. Runs member sizing for joists, glulams, LVL, and headers with complete, verified code compliance.
+            </p>
+            <div class="pillar-software-chips">
+              <div class="software-chip"><span>●</span> Weyerhaeuser ForteWEB</div>
+              <div class="software-chip"><span>●</span> Tekla TEDDS</div>
+              <div class="software-chip"><span>●</span> Microsoft Excel</div>
+            </div>
+          </div>
+
+          <div class="pillar-visual">
+            <div class="calc-clean-list">
+              <!-- Line 1: Mu <= phiMn -->
+              <div class="calc-clean-row">
+                <div class="calc-check-wrap">
+                  <svg class="calc-draw-check" viewBox="0 0 40 40">
+                    <circle class="check-circle-path circ-1" cx="20" cy="20" r="16" fill="rgba(46, 213, 115, 0.08)" stroke="#2ed573" stroke-width="3" />
+                    <path class="check-draw-path chk-1" d="M 11 20.5 L 17 26.5 L 29 13.5" fill="none" stroke="#2ed573" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div class="calc-text-block calc-text-1">
+                  <div class="calc-math-sym">M<sub>u</sub> &le; &phi;M<sub>n</sub></div>
+                  <div class="calc-sub-vals">
+                    <span>48.2 k-ft &le; 64.9 k-ft</span>
+                    <span class="calc-dc-badge">D/C ratio: 0.74</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Line 2: Vu <= phiVn -->
+              <div class="calc-clean-row">
+                <div class="calc-check-wrap">
+                  <svg class="calc-draw-check" viewBox="0 0 40 40">
+                    <circle class="check-circle-path circ-2" cx="20" cy="20" r="16" fill="rgba(46, 213, 115, 0.08)" stroke="#2ed573" stroke-width="3" />
+                    <path class="check-draw-path chk-2" d="M 11 20.5 L 17 26.5 L 29 13.5" fill="none" stroke="#2ed573" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div class="calc-text-block calc-text-2">
+                  <div class="calc-math-sym">V<sub>u</sub> &le; &phi;V<sub>n</sub></div>
+                  <div class="calc-sub-vals">
+                    <span>8.1 k &le; 13.8 k</span>
+                    <span class="calc-dc-badge">D/C ratio: 0.59</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Line 3: delta <= L/360 -->
+              <div class="calc-clean-row">
+                <div class="calc-check-wrap">
+                  <svg class="calc-draw-check" viewBox="0 0 40 40">
+                    <circle class="check-circle-path circ-3" cx="20" cy="20" r="16" fill="rgba(46, 213, 115, 0.08)" stroke="#2ed573" stroke-width="3" />
+                    <path class="check-draw-path chk-3" d="M 11 20.5 L 17 26.5 L 29 13.5" fill="none" stroke="#2ed573" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div class="calc-text-block calc-text-3">
+                  <div class="calc-math-sym">&Delta; &le; L/360</div>
+                  <div class="calc-sub-vals">
+                    <span>0.55" &le; 0.80"</span>
+                    <span class="calc-dc-badge">D/C ratio: 0.69</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- 3. Analysis -->
-        <div class="card">
-          <div class="card-icon-wrap">🏗️</div>
-          <h3 class="card-title">Analysis</h3>
-          <p class="card-body">
-            Connects your 3D finite element models to downstream design checks. Extracts governing moment, shear, and axial load envelopes directly from ETABS, SAP2000, and RISA-3D models to audit lateral force-resisting frames and size members without error-prone manual transcription.
-          </p>
-          <div class="card-badge">ETABS, SAP2000 & RISA-3D</div>
+        <!-- ROW 3: ANALYSIS (Text on Left, 2-Bay Stepped Moment Frame in Mode 2 Graphic on Right) -->
+        <div class="pillar-row">
+          <div class="pillar-info">
+            <h3 class="pillar-title">Analysis</h3>
+            <p class="pillar-body">
+              Connects your 3D finite element models directly to downstream design checks. Extracts governing moment, shear, axial load envelopes, and mode shapes directly from ETABS, SAP2000, and RISA-3D to audit lateral force-resisting frames and size members without error-prone manual transcription.
+            </p>
+            <div class="pillar-software-chips">
+              <div class="software-chip"><span>●</span> ETABS</div>
+              <div class="software-chip"><span>●</span> SAP2000</div>
+              <div class="software-chip"><span>●</span> RISA-3D</div>
+            </div>
+          </div>
+
+          <div class="pillar-visual">
+            <svg class="visual-svg" viewBox="0 0 460 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <filter id="frameGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+
+              <!-- Fixed Base Supports & Foundation Line (Stationary) -->
+              <line x1="60" y1="220" x2="420" y2="220" stroke="#223f5e" stroke-width="2" />
+
+              <!-- Left Column Base Plate & Ground Hatching (x=120) -->
+              <rect x="105" y="216" width="30" height="4" rx="1" fill="#38bdf8" />
+              <g stroke="#16334f" stroke-width="1.4">
+                <line x1="108" y1="220" x2="101" y2="231" />
+                <line x1="116" y1="220" x2="109" y2="231" />
+                <line x1="124" y1="220" x2="117" y2="231" />
+                <line x1="132" y1="220" x2="125" y2="231" />
+              </g>
+
+              <!-- Middle Column Base Plate & Ground Hatching (x=240) -->
+              <rect x="225" y="216" width="30" height="4" rx="1" fill="#38bdf8" />
+              <g stroke="#16334f" stroke-width="1.4">
+                <line x1="228" y1="220" x2="221" y2="231" />
+                <line x1="236" y1="220" x2="229" y2="231" />
+                <line x1="244" y1="220" x2="237" y2="231" />
+                <line x1="252" y1="220" x2="245" y2="231" />
+              </g>
+
+              <!-- Right Column Base Plate & Ground Hatching (x=360) -->
+              <rect x="345" y="216" width="30" height="4" rx="1" fill="#38bdf8" />
+              <g stroke="#16334f" stroke-width="1.4">
+                <line x1="348" y1="220" x2="341" y2="231" />
+                <line x1="356" y1="220" x2="349" y2="231" />
+                <line x1="364" y1="220" x2="357" y2="231" />
+                <line x1="372" y1="220" x2="365" y2="231" />
+              </g>
+
+              <!-- Column 1: Left Exterior Column (3 Stories, Bay 1 Tower: y=220 to y=55) -->
+              <path fill="none" stroke="#00f0ff" stroke-width="3.5" stroke-linecap="round" filter="url(#frameGlow)">
+                <animate attributeName="d" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="
+                    M 120 220 C 120 192, 134 192, 134 165 C 134 138, 124 138, 124 110 C 124 82, 105 82, 105 55;
+                    M 120 220 C 120 192, 106 192, 106 165 C 106 138, 116 138, 116 110 C 116 82, 135 82, 135 55;
+                    M 120 220 C 120 192, 134 192, 134 165 C 134 138, 124 138, 124 110 C 124 82, 105 82, 105 55
+                  " />
+              </path>
+
+              <!-- Column 2: Center Interior Column (3 Stories, Step Demising Line: y=220 to y=55) -->
+              <path fill="none" stroke="#00f0ff" stroke-width="3.5" stroke-linecap="round" filter="url(#frameGlow)">
+                <animate attributeName="d" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="
+                    M 240 220 C 240 192, 254 192, 254 165 C 254 138, 244 138, 244 110 C 244 82, 225 82, 225 55;
+                    M 240 220 C 240 192, 226 192, 226 165 C 226 138, 236 138, 236 110 C 236 82, 255 82, 255 55;
+                    M 240 220 C 240 192, 254 192, 254 165 C 254 138, 244 138, 244 110 C 244 82, 225 82, 225 55
+                  " />
+              </path>
+
+              <!-- Column 3: Right Exterior Column (2 Stories, Bay 2 Wing: y=220 to y=110) -->
+              <path fill="none" stroke="#00f0ff" stroke-width="3.5" stroke-linecap="round" filter="url(#frameGlow)">
+                <animate attributeName="d" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="
+                    M 360 220 C 360 192, 374 192, 374 165 C 374 138, 364 138, 364 110;
+                    M 360 220 C 360 192, 346 192, 346 165 C 346 138, 356 138, 356 110;
+                    M 360 220 C 360 192, 374 192, 374 165 C 374 138, 364 138, 364 110
+                  " />
+              </path>
+
+              <!-- Level 1 Floor Beam (Spans both Bay 1 & Bay 2: C1 to C3 at y=165) -->
+              <line y1="165" y2="165" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round">
+                <animate attributeName="x1" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="134; 106; 134" />
+                <animate attributeName="x2" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="374; 346; 374" />
+              </line>
+
+              <!-- Level 2 Floor / Roof Beam (Spans both Bay 1 & Bay 2: C1 to C3 at y=110) -->
+              <line y1="110" y2="110" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round">
+                <animate attributeName="x1" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="124; 116; 124" />
+                <animate attributeName="x2" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="364; 356; 364" />
+              </line>
+
+              <!-- Level 3 Roof Beam (Spans ONLY Bay 1: C1 to C2 at y=55) -->
+              <line y1="55" y2="55" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round">
+                <animate attributeName="x1" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="105; 135; 105" />
+                <animate attributeName="x2" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="225; 255; 225" />
+              </line>
+
+              <!-- Moment Connection Joint Nodes (Rigid Intersections) -->
+              <!-- Level 1 Joints (y=165) -->
+              <circle cy="165" r="4.5" fill="#03070d" stroke="#00f0ff" stroke-width="2">
+                <animate attributeName="cx" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="134; 106; 134" />
+              </circle>
+              <circle cy="165" r="4.5" fill="#03070d" stroke="#00f0ff" stroke-width="2">
+                <animate attributeName="cx" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="254; 226; 254" />
+              </circle>
+              <circle cy="165" r="4.5" fill="#03070d" stroke="#00f0ff" stroke-width="2">
+                <animate attributeName="cx" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="374; 346; 374" />
+              </circle>
+
+              <!-- Level 2 Joints (y=110) -->
+              <circle cy="110" r="4.5" fill="#03070d" stroke="#00f0ff" stroke-width="2">
+                <animate attributeName="cx" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="124; 116; 124" />
+              </circle>
+              <circle cy="110" r="4.5" fill="#03070d" stroke="#00f0ff" stroke-width="2">
+                <animate attributeName="cx" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="244; 236; 244" />
+              </circle>
+              <circle cy="110" r="4.5" fill="#03070d" stroke="#00f0ff" stroke-width="2">
+                <animate attributeName="cx" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="364; 356; 364" />
+              </circle>
+
+              <!-- Level 3 Joints (y=55) -->
+              <circle cy="55" r="4.5" fill="#03070d" stroke="#00f0ff" stroke-width="2">
+                <animate attributeName="cx" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="105; 135; 105" />
+              </circle>
+              <circle cy="55" r="4.5" fill="#03070d" stroke="#00f0ff" stroke-width="2">
+                <animate attributeName="cx" dur="3.2s" repeatCount="indefinite" calcMode="spline"
+                  keyTimes="0; 0.5; 1" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"
+                  values="225; 255; 225" />
+              </circle>
+
+              <!-- Stationary Ground Base Connection Nodes -->
+              <circle cx="120" cy="220" r="4" fill="#03070d" stroke="#38bdf8" stroke-width="2" />
+              <circle cx="240" cy="220" r="4" fill="#03070d" stroke="#38bdf8" stroke-width="2" />
+              <circle cx="360" cy="220" r="4" fill="#03070d" stroke="#38bdf8" stroke-width="2" />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Engineering Capabilities Section -->
-  <section id="capabilities" class="section" style="background: rgba(5, 13, 24, 0.5);">
+  <!-- Engineering Integrations Section -->
+  <section id="integrations" class="section" style="background: rgba(5, 13, 24, 0.5);">
     <div class="container">
       <div class="section-header">
-        <div class="section-tag">Built For Practicing Engineers</div>
-        <h2 class="section-title">Designed for Accuracy, Code Compliance, and Speed</h2>
+        <div class="section-tag">Integrations</div>
+        <h2 class="section-title">Connected Structural Engineering Software</h2>
         <p class="section-subtitle">
-          Every feature is built around the realities of delivering stamped structural drawings and calculation packages.
+          Statikor doesn't reinvent the wheel, or vibe-code you a new error-prone calculation tool. You already have software that is validated, deterministic, and works! Statikor is the AI that knows how to use it.
         </p>
       </div>
 
-      <div class="features-grid">
-        <div class="feature-item">
-          <div class="feature-bullet">📐</div>
-          <div>
-            <h4 class="feature-title">Transparent Math & Code Citations</h4>
-            <p class="feature-desc">
-              No black boxes. Every calculation explicitly cites the governing sections of IBC 2024, ASCE 7-22, NDS 2024, and AISC 360-22 with step-by-step math ready for peer review and city plan check.
-            </p>
+      <div class="software-grid">
+        <!-- 1. AutoCAD -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">AutoCAD</h4>
+              <span class="software-card-category">Drafting & Framing Plans</span>
+            </div>
+            <div class="software-badge live"><span class="pulse-dot"></span> Integrated</div>
           </div>
+          <p class="software-card-desc">
+            Reads framing layers and architectural backgrounds directly. Traces tributary load paths, verifies bearing wall support, checks spans, and synchronizes beam tags and schedule callouts.
+          </p>
         </div>
 
-        <div class="feature-item">
-          <div class="feature-bullet">🔄</div>
-          <div>
-            <h4 class="feature-title">Zero Discrepancies Between Plans & Calcs</h4>
-            <p class="feature-desc">
-              The number one source of plan check redlines is mismatched member sizes between calculation binders and structural drawings. Statikor synchronizes both simultaneously.
-            </p>
+        <!-- 2. Weyerhaeuser Forte -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">Weyerhaeuser Forte</h4>
+              <span class="software-card-category">Wood Member Sizing</span>
+            </div>
+            <div class="software-badge live"><span class="pulse-dot"></span> Integrated</div>
           </div>
+          <p class="software-card-desc">
+            Populates geometries, spans, and design loads for floor joists, drop beams, and LVL headers. Executes Forte's sizing engine and validates code compliance with complete pass/fail reports.
+          </p>
         </div>
 
-        <div class="feature-item">
-          <div class="feature-bullet">🔒</div>
-          <div>
-            <h4 class="feature-title">Your Client Project Files Stay Private</h4>
-            <p class="feature-desc">
-              Your drawings, BIM models, and proprietary calculation packages stay secure on your local workstation. Your confidential project files are never uploaded to public databases.
-            </p>
+        <!-- 3. Autodesk Revit -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">Autodesk Revit</h4>
+              <span class="software-card-category">BIM & Analytical Models</span>
+            </div>
+            <div class="software-badge soon">Coming Soon!</div>
           </div>
+          <p class="software-card-desc">
+            Bridges 3D BIM framing models with structural calculation engines. Inspects analytical axes, audits member sizes, and synchronizes beam schedules with your latest designs.
+          </p>
         </div>
 
-        <div class="feature-item">
-          <div class="feature-bullet">⚡</div>
-          <div>
-            <h4 class="feature-title">Fast Design Revisions</h4>
-            <p class="feature-desc">
-              When architects move columns or shift bearing walls, re-evaluating the tributary load path and re-sizing affected members takes seconds instead of hours of tedious manual re-work.
-            </p>
+        <!-- 4. Enercalc -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">Enercalc</h4>
+              <span class="software-card-category">Component Design</span>
+            </div>
+            <div class="software-badge soon">Coming Soon!</div>
           </div>
+          <p class="software-card-desc">
+            Automates component design modules for spread footings, masonry retaining walls, steel lintels, and timber columns without manual number entry or copy-pasting tributary loads.
+          </p>
         </div>
 
-        <div class="feature-item">
-          <div class="feature-bullet">⚖️</div>
-          <div>
-            <h4 class="feature-title">Complete ASCE 7-22 Load Combinations</h4>
-            <p class="feature-desc">
-              Automates ASD and LRFD load combinations including dead, live, roof live, snow, wind, and seismic. Verifies deflection limits (L/360 live, L/240 total, or custom limits).
-            </p>
+        <!-- 5. CSI ETABS -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">CSI ETABS</h4>
+              <span class="software-card-category">Building Analysis & Lateral Systems</span>
+            </div>
+            <div class="software-badge soon">Coming Soon!</div>
           </div>
+          <p class="software-card-desc">
+            Extracts governing lateral load combinations, story drift ratios, diaphragm shear distributions, and mode shapes directly from multi-story building models for downstream design.
+          </p>
         </div>
 
-        <div class="feature-item">
-          <div class="feature-bullet">📋</div>
-          <div>
-            <h4 class="feature-title">One-Click Calculation Binders</h4>
-            <p class="feature-desc">
-              Assemble professional, stamped calculation binders combining member reports from Forte, Enercalc, and custom sheets into a clean, unified submission package.
-            </p>
+        <!-- 6. CSI SAP2000 -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">CSI SAP2000</h4>
+              <span class="software-card-category">3D Finite Element Analysis</span>
+            </div>
+            <div class="software-badge soon">Coming Soon!</div>
           </div>
+          <p class="software-card-desc">
+            Interrogates 3D structural frameworks, trusses, and mat foundations to extract moment envelopes, shear demands, axial thrusts, and boundary reaction forces for complex structures.
+          </p>
+        </div>
+
+        <!-- 7. RISA-3D -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">RISA-3D</h4>
+              <span class="software-card-category">Frame & Truss Analysis</span>
+            </div>
+            <div class="software-badge soon">Coming Soon!</div>
+          </div>
+          <p class="software-card-desc">
+            Runs general space frame and braced bent models, extracting governing unity checks, deflection baselines, and joint reactions into unified structural calculation binders.
+          </p>
+        </div>
+
+        <!-- 8. StructurePoint spColumn -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">StructurePoint spColumn</h4>
+              <span class="software-card-category">Concrete Column & Wall Design</span>
+            </div>
+            <div class="software-badge soon">Coming Soon!</div>
+          </div>
+          <p class="software-card-desc">
+            Populates axial-flexural interaction diagrams (P-M-M) and verifies longitudinal and tie rebar ratios for multi-story concrete columns and shear wall boundary elements.
+          </p>
+        </div>
+
+        <!-- 9. Bentley RAM Structural System -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">Bentley RAM Steel</h4>
+              <span class="software-card-category">Steel Framing Systems</span>
+            </div>
+            <div class="software-badge soon">Coming Soon!</div>
+          </div>
+          <p class="software-card-desc">
+            Extracts composite steel beam sizing, shear stud counts, slab camber, and column stack loads directly from RAM models to eliminate manual cross-referencing against drawing schedules.
+          </p>
+        </div>
+
+        <!-- 10. Microsoft Excel -->
+        <div class="software-card">
+          <div class="software-card-top">
+            <div class="software-card-title-group">
+              <h4 class="software-card-name">Microsoft Excel</h4>
+              <span class="software-card-category">Calculation Ledgers & Custom Sheets</span>
+            </div>
+            <div class="software-badge soon">Coming Soon!</div>
+          </div>
+          <p class="software-card-desc">
+            Reads and updates your firm's standard engineering design spreadsheets, cross-verifies check matrices, and compiles clean submission packages ready for plan check.
+          </p>
         </div>
       </div>
     </div>
@@ -1013,14 +1957,14 @@
         </p>
 
         <div class="cta-buttons">
-          <a href="/download/windows" class="btn-primary">
+          <a href="/download/windows" id="early-primary-btn" class="btn-primary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Download for Windows (.exe)</span>
+            <span id="early-primary-label">Download for Windows (.exe)</span>
           </a>
-          <a href="/download/mac" class="btn-secondary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Download for macOS (.dmg)</span>
-          </a>
+        </div>
+
+        <div class="os-meta" style="margin-top: 1rem; justify-content: center;">
+          <a href="/download/mac" id="early-other-link">Download for macOS (.dmg)</a>
         </div>
       </div>
     </div>
@@ -1036,10 +1980,10 @@
         </div>
 
         <div class="footer-links">
-          <a href="#integrations">Drafting & Modeling</a>
-          <a href="#integrations">Calculations</a>
-          <a href="#integrations">Analysis</a>
-          <a href="#capabilities">Capabilities</a>
+          <a href="#capabilities">Drafting & Modeling</a>
+          <a href="#capabilities">Calculations</a>
+          <a href="#capabilities">Analysis</a>
+          <a href="#integrations">Integrations</a>
           <a href="/download/windows">Windows (.exe)</a>
           <a href="/download/mac">macOS (.dmg)</a>
         </div>
@@ -1057,23 +2001,73 @@
     (function() {
       const ua = navigator.userAgent;
       const isMac = ua.includes('Mac');
-      const isWin = ua.includes('Win');
       
       const primaryBtn = document.getElementById('primary-download-btn');
       const primaryLabel = document.getElementById('primary-btn-label');
-      const osText = document.getElementById('os-detected-text');
+      const heroOtherLink = document.getElementById('hero-other-link');
       const navBtn = document.getElementById('nav-download-btn');
+
+      const earlyPrimaryBtn = document.getElementById('early-primary-btn');
+      const earlyPrimaryLabel = document.getElementById('early-primary-label');
+      const earlyOtherLink = document.getElementById('early-other-link');
 
       if (isMac) {
         if (primaryBtn) primaryBtn.href = '/download/mac';
         if (navBtn) navBtn.href = '/download/mac';
         if (primaryLabel) primaryLabel.textContent = 'Download for macOS (.dmg)';
-        if (osText) osText.textContent = 'Detected: macOS Universal';
+        if (heroOtherLink) {
+          heroOtherLink.href = '/download/windows';
+          heroOtherLink.textContent = 'Download for Windows (.exe)';
+        }
+
+        if (earlyPrimaryBtn) earlyPrimaryBtn.href = '/download/mac';
+        if (earlyPrimaryLabel) earlyPrimaryLabel.textContent = 'Download for macOS (.dmg)';
+        if (earlyOtherLink) {
+          earlyOtherLink.href = '/download/windows';
+          earlyOtherLink.textContent = 'Download for Windows (.exe)';
+        }
       } else {
         if (primaryBtn) primaryBtn.href = '/download/windows';
         if (navBtn) navBtn.href = '/download/windows';
         if (primaryLabel) primaryLabel.textContent = 'Download for Windows (.exe)';
-        if (osText) osText.textContent = 'Detected: Windows 10/11 (64-bit)';
+        if (heroOtherLink) {
+          heroOtherLink.href = '/download/mac';
+          heroOtherLink.textContent = 'Download for macOS (.dmg)';
+        }
+
+        if (earlyPrimaryBtn) earlyPrimaryBtn.href = '/download/windows';
+        if (earlyPrimaryLabel) earlyPrimaryLabel.textContent = 'Download for Windows (.exe)';
+        if (earlyOtherLink) {
+          earlyOtherLink.href = '/download/mac';
+          earlyOtherLink.textContent = 'Download for macOS (.dmg)';
+        }
+      }
+    })();
+  </script>
+
+  <!-- Scroll Reveal Fade-in for Capability Cards -->
+  <script>
+    (function() {
+      const rows = document.querySelectorAll('.pillar-row');
+      if (!rows.length) return;
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries, obs) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              obs.unobserve(entry.target);
+            }
+          });
+        }, {
+          root: null,
+          rootMargin: '0px 0px -40px 0px',
+          threshold: 0.12
+        });
+
+        rows.forEach(row => observer.observe(row));
+      } else {
+        rows.forEach(row => row.classList.add('is-visible'));
       }
     })();
   </script>
